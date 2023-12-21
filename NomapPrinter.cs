@@ -19,7 +19,7 @@ namespace NomapPrinter
     {
         const string pluginID = "shudnal.NomapPrinter";
         const string pluginName = "Nomap Printer";
-        const string pluginVersion = "1.1.6";
+        const string pluginVersion = "1.1.7";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -36,6 +36,7 @@ namespace NomapPrinter
         private static ConfigEntry<MapWindow> mapWindow;
         private static ConfigEntry<bool> allowInteractiveMapOnWrite;
         private static ConfigEntry<bool> showSharedMap;
+        private static ConfigEntry<bool> preventPinAddition;
 
         private static ConfigEntry<float> showNearTheTableDistance;
         private static ConfigEntry<int> showMapBasePiecesRequirement;
@@ -402,6 +403,7 @@ namespace NomapPrinter
             mapWindow = config("Map", "Ingame map", MapWindow.ShowEverywhere, "Where to show ingame map");
             allowInteractiveMapOnWrite = config("Map", "Show interactive map on record discoveries", false, "Show interactive original game map on record discoveries part of map table used");
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
+            preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
 
             showNearTheTableDistance = config("Map restrictions", "Show map near the table when distance is less than", defaultValue: 10f, "Distance to nearest map table for map to be shown");
             showMapBasePiecesRequirement = config("Map restrictions", "Show map when base pieces near the player is more than", defaultValue: 0, "Count of base pieces surrounding the player should be more than that for map to be shown");
@@ -820,7 +822,7 @@ namespace NomapPrinter
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.Save))]
-        public static class Player_Save_Patch
+        public static class Player_Save_SaveMapData
         {
             public static bool Prefix(Player __instance)
             {
@@ -830,7 +832,7 @@ namespace NomapPrinter
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.Load))]
-        public static class Player_Load_Patch
+        public static class Player_Load_LoadMapData
         {
             public static void Postfix(Player __instance)
             {
@@ -843,7 +845,7 @@ namespace NomapPrinter
         }
 
         [HarmonyPatch(typeof(Hud), nameof(Hud.Awake))]
-        class Hud_Awake_Patch
+        class Hud_Awake_AddIngameView
         {
             static void Postfix(Hud __instance)
             {
@@ -902,7 +904,7 @@ namespace NomapPrinter
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead))]
         [HarmonyPriority(Priority.Last)]
-        public static class MapTable_OnRead_Patch
+        public static class MapTable_OnRead_ReadDiscoveriesInteraction
         {
             static void Postfix(MapTable __instance)
             {
@@ -935,7 +937,7 @@ namespace NomapPrinter
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnWrite))]
         [HarmonyPriority(Priority.Last)]
-        public static class MapTable_OnWrite_Patch
+        public static class MapTable_OnWrite_RecordDiscoveriesInteraction
         {
             static void Postfix(MapTable __instance)
             {
@@ -959,7 +961,7 @@ namespace NomapPrinter
 
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.IsOpen))]
         [HarmonyPriority(Priority.Last)]
-        public static class Minimap_IsOpen_Patch
+        public static class Minimap_IsOpen_EmulateMinimapOpenStatus
         {
             static void Postfix(ref bool __result)
             {
@@ -967,6 +969,19 @@ namespace NomapPrinter
                     return;
 
                 __result = __result || instance.DisplayingWindow;
+            }
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.ShowPinNameInput))]
+        [HarmonyPriority(Priority.Last)]
+        public static class Minimap_ShowPinNameInput_PreventPinAddition
+        {
+            static bool Prefix()
+            {
+                if (!modEnabled.Value)
+                    return true;
+
+                return !(allowInteractiveMapOnWrite.Value && preventPinAddition.Value);
             }
         }
 
@@ -1753,14 +1768,11 @@ namespace NomapPrinter
 
         public sealed class ValueChangedEventArgs<TValue> : EventArgs
         {
-            /// <inheritdoc />
             public ValueChangedEventArgs(TValue newValue)
             {
                 NewValue = newValue;
             }
-            /// <summary>
-            /// Newly assigned value
-            /// </summary>
+
             public TValue NewValue { get; }
         }
 

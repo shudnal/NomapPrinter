@@ -1,6 +1,6 @@
 {
     "name": "NomapPrinter",
-    "version_number": "1.1.6",
+    "version_number": "1.1.7",
     "website_url": "https://github.com/shudnal/NomapPrinter",
     "description": "In nomap mode reading the Cartography Table will generate a simplified map to be shown like the interactive map in normal mode.",
     "dependencies": [ "denikson-BepInExPack_Valheim-5.4.2202" ]

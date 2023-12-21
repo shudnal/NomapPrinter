@@ -60,6 +60,9 @@ https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationMa
 
 ## Changelog
 
+v 1.1.7
+* option to prevent interactive map pins addition
+
 v 1.1.6
 * patch 0.217.38
 
