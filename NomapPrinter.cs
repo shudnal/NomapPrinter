@@ -19,7 +19,7 @@ namespace NomapPrinter
     {
         const string pluginID = "shudnal.NomapPrinter";
         const string pluginName = "Nomap Printer";
-        const string pluginVersion = "1.1.7";
+        const string pluginVersion = "1.1.8";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -124,8 +124,6 @@ namespace NomapPrinter
 
         private static string saveFieldKey;
 
-        public event EventHandler<ValueChangedEventArgs<bool>> DisplayingWindowChanged;
-
         private static DirectoryInfo pluginFolder;
         private static FileSystemWatcher fileSystemWatcher;
         private static string mapFileName;
@@ -219,7 +217,6 @@ namespace NomapPrinter
 
         private void Update()
         {
-
             if (!modEnabled.Value)
                 return;
 
@@ -322,7 +319,6 @@ namespace NomapPrinter
                         (Chat.instance == null || !Chat.instance.HasFocus()) &&
                         !Console.IsVisible() && !Menu.IsVisible() && TextViewer.instance != null &&
                         !TextViewer.instance.IsVisible() && !TextInput.IsVisible() && !Minimap.IsOpen();
-
             }
         }
 
@@ -386,8 +382,6 @@ namespace NomapPrinter
                 }
 
                 parentObject.SetActive(_displayingWindow);
-
-                DisplayingWindowChanged?.Invoke(this, new ValueChangedEventArgs<bool>(value));
             }
         }
 
@@ -875,8 +869,6 @@ namespace NomapPrinter
             if (!saveMapToFile.Value && !Game.m_noMap)
                 return;
 
-            instance.ConfigUpdate();
-
             if (!saveMapToFile.Value && mapStorage.Value == MapStorage.LoadFromSharedFile)
                 return;
 
@@ -889,8 +881,6 @@ namespace NomapPrinter
             if (!Game.m_noMap)
                 return;
 
-            instance.ConfigUpdate();
-
             if (!allowInteractiveMapOnWrite.Value)
                 return;
 
@@ -902,8 +892,7 @@ namespace NomapPrinter
             Game.m_noMap = true;
         }
 
-        [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead))]
-        [HarmonyPriority(Priority.Last)]
+        [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead), new Type[] { typeof(Switch), typeof(Humanoid), typeof(ItemDrop.ItemData), typeof(bool) })]
         public static class MapTable_OnRead_ReadDiscoveriesInteraction
         {
             static void Postfix(MapTable __instance)
@@ -912,9 +901,7 @@ namespace NomapPrinter
                     return;
 
                 if (!PrivateArea.CheckAccess(__instance.transform.position))
-                {
                     return;
-                }
 
                 if (mapWindow.Value == MapWindow.ShowOnInteraction)
                 {
@@ -922,21 +909,18 @@ namespace NomapPrinter
                         ShowMessage(messageNotReady.Value);
                     else
                         instance.DisplayingWindow = true;
-                    return;
                 }
-
-                if (tablePartsSwap.Value)
+                else
                 {
-                    ShowInteractiveMap();
-                    return;
+                    if (tablePartsSwap.Value)
+                        ShowInteractiveMap();
+                    else
+                        GenerateMap();
                 }
-
-                GenerateMap();
             }
         }
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnWrite))]
-        [HarmonyPriority(Priority.Last)]
         public static class MapTable_OnWrite_RecordDiscoveriesInteraction
         {
             static void Postfix(MapTable __instance)
@@ -945,17 +929,12 @@ namespace NomapPrinter
                     return;
 
                 if (!PrivateArea.CheckAccess(__instance.transform.position))
-                {
                     return;
-                }
 
                 if (tablePartsSwap.Value || mapWindow.Value == MapWindow.ShowOnInteraction)
-                {
                     GenerateMap();
-                    return;
-                }
-
-                ShowInteractiveMap();
+                else
+                    ShowInteractiveMap();
             }
         }
 
@@ -1765,16 +1744,5 @@ namespace NomapPrinter
             }
 
         }
-
-        public sealed class ValueChangedEventArgs<TValue> : EventArgs
-        {
-            public ValueChangedEventArgs(TValue newValue)
-            {
-                NewValue = newValue;
-            }
-
-            public TValue NewValue { get; }
-        }
-
     }
 }

@@ -3,16 +3,22 @@
 	<Target Name="ILRepacker" AfterTargets="Build">
 		<ItemGroup>
 			<InputAssemblies Include="$(TargetPath)" />
-			<InputAssemblies Include="$(OutputPath)ServerSync.dll" />
+			<InputAssemblies Include="$(OutputPath)\ServerSync.dll" />
 		</ItemGroup>
-		<ILRepack Parallel="true" DebugInfo="false" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)" />
+		<ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)" />
+	</Target>
+	<Target Name="CopyDLLPackage" AfterTargets="ILRepacker">
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ProjectDir)package\thunderstore\$(SolutionName)\" />
+		<Message Text="Copied to thunderstore package folder." Importance="High" />
+	</Target>
+	<Target Name="ZipOutputPath" AfterTargets="CopyDLLPackage">
+		<ZipDirectory
+				SourceDirectory="$(ProjectDir)package\thunderstore\$(SolutionName)\"
+				DestinationFile="$(ProjectDir)package\thunderstore\$(SolutionName).zip"
+				Overwrite="true"/>
 	</Target>
 	<Target Name="CopyDLLPlugins" AfterTargets="ILRepacker">
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="F:\Steam\steamapps\common\Valheim\BepInEx\plugins\" />
 		<Message Text="Copied to plugins folder." Importance="High" />
-	</Target>
-	<Target Name="CopyDLLPackage" AfterTargets="ILRepacker">
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ProjectDir)\$(ProjectName)\package\" />
-		<Message Text="Copied to package folder." Importance="High" />
 	</Target>
 </Project>
