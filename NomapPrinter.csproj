@@ -91,7 +91,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MapImageGeneration.cs" />
+    <Compile Include="MapGenerator.cs" />
+    <Compile Include="MapMaker.cs" />
+    <Compile Include="MapViewer.cs" />
     <Compile Include="NomapPrinter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
