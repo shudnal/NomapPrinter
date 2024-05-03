@@ -1,3 +1,13 @@
+# 1.2.0
+* Ashlands support
+* Mistlands on Vanilla map support
+* Mistlands on simple maps restyled
+* major optimization rework
+* small map size option removed
+* map data will be cached after first draw
+* map saving to character is safe option now as it only saves a little exploration data (20KB)
+* if you used "Character" option in "Data storage" config you will be needed to redraw the map
+
 # 1.1.8
 * patch 0.217.46
 
