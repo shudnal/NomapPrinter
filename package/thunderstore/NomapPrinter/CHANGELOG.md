@@ -6,7 +6,8 @@
 * small map size option removed
 * map data will be cached after first draw
 * map saving to character is safe option now as it only saves a little exploration data (20KB)
-* if you used "Character" option in "Data storage" config you will be needed to redraw the map
+* if you used "Character" option in "Data storage" config before that update you will be needed to redraw the map
+* deprecated character map data will be pruned automatically reducing size of character save file
 
 # 1.1.8
 * patch 0.217.46

@@ -188,7 +188,7 @@ namespace NomapPrinter
             mapSize = config("Map style", "Map size", MapSize.Normal, "Resolution of generated map. More details means smoother lines but more data will be stored");
             mapDefaultScale = config("Map style", "Map zoom default scale", 0.7f, "Default scale of opened map, more is closer, less is farther.");
             mapMinimumScale = config("Map style", "Map zoom minimum scale", 0.25f, "Minimum scale of opened map, more is closer, less is farther.");
-            mapMaximumScale = config("Map style", "Map zoom maximum scale", 1.0f, "Maximum scale of opened map, more is closer, less is farther.");
+            mapMaximumScale = config("Map style", "Map zoom maximum scale", 2.0f, "Maximum scale of opened map, more is closer, less is farther.");
 
             pinScale = config("Map style extended", "Pin scale", 1.0f, "Pin scale");
             preserveSharedMapFog = config("Map style extended", "Preserve shared map fog tint for vanilla map", true, "Generate Vanilla map with shared map fog tint");
@@ -271,6 +271,9 @@ namespace NomapPrinter
                 if (!modEnabled.Value)
                     return;
 
+                if (MapTable_OnWrite_RecordDiscoveriesInteraction.isCalled)
+                    return;
+
                 if (!PrivateArea.CheckAccess(__instance.transform.position))
                     return;
 
@@ -286,8 +289,17 @@ namespace NomapPrinter
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnWrite))]
         public static class MapTable_OnWrite_RecordDiscoveriesInteraction
         {
+            public static bool isCalled = false;
+
+            public static void Prefix()
+            {
+                isCalled = true;
+            }
+
             public static void Postfix(MapTable __instance)
             {
+                isCalled = false;
+
                 if (!modEnabled.Value)
                     return;
 

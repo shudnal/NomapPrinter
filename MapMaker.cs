@@ -403,6 +403,12 @@ namespace NomapPrinter
             instance.StartCoroutine(worker);
         }
 
+        public static void PregenerateMap()
+        {
+            worldUID = ZNet.instance.GetWorldUID();
+            instance.StartCoroutine(CreateMap(pregeneration: true));
+        }
+
         public static IEnumerator CreateMap(bool pregeneration = false)
         {
             isWorking = true;
@@ -418,13 +424,13 @@ namespace NomapPrinter
             {
                 if (!pregeneration) ShowMessage(messageStart.Value);
 
-                MapGenerator.Initialize();
-
                 if (!exploredMapData.LoadExploredMap())
                 {
                     yield return PrepareTerrainData();
 
                     if (!pregeneration) ShowMessage(messageSaving.Value);
+
+                    yield return MapGenerator.Initialize();
 
                     yield return PrepareMap(mapType.Value);
 
@@ -443,7 +449,7 @@ namespace NomapPrinter
 
                     yield return ApplyMapTexture(MapGenerator.Result);
 
-                    if (!pregeneration) ShowMessage(messageReady.Value);
+                    ShowMessage(messageReady.Value);
                 }
 
                 MapGenerator.DeInitializeTextures();
@@ -540,7 +546,7 @@ namespace NomapPrinter
             
             BitArray ba = new BitArray(Utils.Decompress(Convert.FromBase64String(exploredMapBase64)));
 
-            if (exploration.Length != ba.Count)
+            if (exploration == null || exploration.Length != ba.Count)
                 exploration = new bool[ba.Count];
 
             ba.CopyTo(exploration, 0);
@@ -1246,20 +1252,6 @@ namespace NomapPrinter
 
             pinIcons.Clear(); // Need to rebuild icon cache
             iconSize = newSize;
-        }
-
-        [HarmonyPatch(typeof(WorldGenerator), nameof(WorldGenerator.Initialize))]
-        public static class WorldGenerator_Initialize_CreateMap
-        {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix()
-            {
-                if (!(bool)FejdStartup.instance && modEnabled.Value && mapStorage.Value == MapStorage.Character)
-                {
-                    worldUID = ZNet.instance.GetWorldUID();
-                    instance.StartCoroutine(CreateMap(pregeneration:true));
-                }
-            }
         }
     }
 }

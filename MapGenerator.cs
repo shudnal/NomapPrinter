@@ -2,13 +2,13 @@
 using System.Collections;
 using System.Threading;
 using UnityEngine;
-using static NomapPrinter.MapMaker;
+using static NomapPrinter.NomapPrinter;
 
 namespace NomapPrinter
 {
     internal static class MapGenerator
     {
-        private static int m_textureSize;
+        private const int m_textureSize = 4096; // original = 2048
 
         private static bool[] _exploredData;
         private static Color32[] _mapTexture;
@@ -92,13 +92,13 @@ namespace NomapPrinter
         public static readonly Color32 mistColor = new Color32(217, 140, 166, byte.MaxValue); // 227, 172, 188
         public static readonly Color clearMask = new Color(0f, 0f, 0f, 1f);
 
-        public static void Initialize()
+        public static IEnumerator Initialize()
         {
-            m_textureSize = WorldMapData.textureSize;
-            
-            if (spaceRes == 0)
+            if (spaceRes == 0 && (mapType.Value == MapType.BirdsEye || mapType.Value == MapType.Topographical))
             {
-                Texture spaceTex = Minimap.instance.m_mapImageLarge.material.GetTexture("_SpaceTex");
+                yield return new WaitUntil(() => Minimap.instance != null && Minimap.instance.m_mapLargeShader != null);
+
+                Texture spaceTex = Minimap.instance.m_mapLargeShader.GetTexture("_SpaceTex");
 
                 spaceRes = spaceTex.width;
 

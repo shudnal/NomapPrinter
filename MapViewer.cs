@@ -258,11 +258,8 @@ namespace NomapPrinter
             if (scaleIncrement == 0)
                 scaleIncrement = mapDefaultScale.Value - content.localScale.x;
 
-            //int sizeFactor = (mapSize.Value == MapSize.Small ? 1 : 2);
-            int typeFactor = (mapType.Value == MapType.Vanilla ? 2 : 1);
-
-            float minScale = Mathf.Max(mapMinimumScale.Value, 0.1f) * 2 * typeFactor / 2f;
-            float maxScale = Mathf.Min(mapMaximumScale.Value, 2f) * typeFactor * 2f;
+            float minScale = Mathf.Max(mapMinimumScale.Value, mapSize.Value == MapSize.Normal ? 0.4f: 0.25f);
+            float maxScale = Mathf.Min(mapMaximumScale.Value, 2f);
 
             RectTransformUtility.ScreenPointToLocalPointInRectangle(content, UnityInput.Current.mousePosition, null, out Vector2 relativeMousePosition);
 
@@ -443,15 +440,6 @@ namespace NomapPrinter
 
         private static bool LoadMapFromLocalFile(Player player)
         {
-            if (!modEnabled.Value)
-                return false;
-
-            if (player == null || player != Player.m_localPlayer)
-                return false;
-
-            if (mapStorage.Value != MapStorage.LocalFolder)
-                return false;
-
             string filename = LocalFileName(player);
 
             if (!File.Exists(filename))
@@ -486,6 +474,9 @@ namespace NomapPrinter
             if (mapStorage.Value != MapStorage.LocalFolder)
                 return;
 
+            if (!mapTextureIsReady)
+                return;
+
             string filename = LocalFileName(player);
 
             try
@@ -515,8 +506,16 @@ namespace NomapPrinter
         {
             public static void Postfix(Player __instance)
             {
-                if (LoadMapFromLocalFile(__instance))
+                if (!modEnabled.Value)
+                    return;
+
+                if (__instance == null || __instance != Player.m_localPlayer)
+                    return;
+
+                if (mapStorage.Value == MapStorage.LocalFolder && LoadMapFromLocalFile(__instance))
                     SetMapIsReady();
+                else if (mapStorage.Value != MapStorage.LoadFromSharedFile)
+                    MapMaker.PregenerateMap();
             }
         }
 
