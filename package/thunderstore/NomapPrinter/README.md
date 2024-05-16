@@ -50,11 +50,9 @@ Map content will be automatically updated on file change.
 * It is compatible with EpicLoot map pins
 
 ## Configurating
-The best way to handle configs is configuration manager. Choose one that works for you:
+The best way to handle configs is [Configuration Manager](https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/).
 
-https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/
-
-https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/
+Or [Official BepInEx Configuration Manager](https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/).
 
 ## Mirrors
 [Nexus](https://www.nexusmods.com/valheim/mods/2505)
