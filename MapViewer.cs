@@ -542,6 +542,9 @@ namespace NomapPrinter
                 if (!modEnabled.Value)
                     return;
 
+                if (!Game.m_noMap)
+                    return;
+
                 __result = __result || DisplayingWindow;
             }
         }
@@ -552,6 +555,9 @@ namespace NomapPrinter
             public static bool Prefix()
             {
                 if (!modEnabled.Value)
+                    return true;
+
+                if (!Game.m_noMap)
                     return true;
 
                 return !(allowInteractiveMapOnWrite.Value && preventPinAddition.Value);

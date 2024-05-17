@@ -1,3 +1,6 @@
+# 1.2.1
+* fixed pin adding prevention in regular map mode
+
 # 1.2.0
 * Ashlands support
 * Mistlands on Vanilla map support
