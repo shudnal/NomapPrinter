@@ -1,3 +1,6 @@
+# 1.2.2
+* using items (1-8) on map table doesn't open/close generated map 
+
 # 1.2.1
 * fixed pin adding prevention in regular map mode
 
