@@ -13,7 +13,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.2.2";
+        public const string pluginVersion = "1.2.3";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -87,6 +87,7 @@ namespace NomapPrinter
 
         public static string localPath;
         public static string cacheDirectory;
+        public static string configDirectory;
 
         public enum MapType
         {
@@ -228,6 +229,7 @@ namespace NomapPrinter
 
             localPath = Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
             cacheDirectory = Path.Combine(Paths.CachePath, pluginID);
+            configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)

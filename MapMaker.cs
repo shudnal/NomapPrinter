@@ -280,6 +280,41 @@ namespace NomapPrinter
                 return Path.Combine(CacheDirectory(), $"{exploredMapFileName}_{exploredMapType}");
             }
 
+            private string[] ExploredMapFileNameCustomFiles()
+            {
+                return new string[2] {
+                    Path.Combine(configDirectory, $"{exploredMapType}.{worldUID}.explored.png"),
+                    Path.Combine(configDirectory, $"{exploredMapType}.{ZNet.instance.GetWorldName()}.explored.png"),
+                };
+            }
+
+            private bool LoadFromCustomFile()
+            {
+                foreach (string customFile in ExploredMapFileNameCustomFiles())
+                    if (File.Exists(customFile))
+                    {
+                        try
+                        {
+                            exploredMap = new Texture2D(2, 2);
+                            if (exploredMap.LoadImage(File.ReadAllBytes(customFile)))
+                            {
+                                LogInfo($"Explored map loaded from file {customFile}");
+                                return true;
+                            }
+                            else
+                            {
+                                UnityEngine.Object.Destroy(exploredMap);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            LogWarning($"Error reading file ({customFile})! Error: {e.Message}");
+                        }
+                    }
+
+                return false;
+            }
+
             public bool LoadExploredMap()
             {
                 if (exploredMap != null && exploredMapType == mapType.Value)
@@ -290,6 +325,9 @@ namespace NomapPrinter
 
                 exploredMap = null;
                 exploredMapType = mapType.Value;
+
+                if (LoadFromCustomFile())
+                    return true;
 
                 string filename = ExploredMapFileName();
                 if (!File.Exists(filename))

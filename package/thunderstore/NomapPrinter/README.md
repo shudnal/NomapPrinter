@@ -39,6 +39,28 @@ Map content will be automatically updated on file change.
 * set to default zoom by right mouse click
 * centered at spawn point by middle mouse click
 
+## Custom explored map
+
+You can use your own variant of explored map. It will be overlayed by exploration fog using style you chose.
+
+Map data must be stored in 4096x4096 PNG file named "{MapType}.{WorldName}.explored.png" and placed into **\BepInEx\config\shudnal.NomapPrinter** directory.
+
+If you have several worlds with similar name then instead on world name you can use numerical world ID. To get world ID without using any other mod you can generate map using that mod and check **\BepInEx\cache\shudnal.NomapPrinter** directory. There will be folders named as world ID. One of them will be your world.
+
+For example you have world named ***BraveNewWorld*** and you use ***Birds Eye*** map type.
+To get full explored map you have to 
+* relaunch the game
+* login into the world and use "exploremap" command
+* choose **Normal map** size, **Birds Eye** map type
+* disable **Show map pins** option
+* enable **Save to file** option and leave **Save to file path** empty
+* generate map using map table
+* file **BirdsEye.BraveNewWorld.png** will be placed into "**%appdata%\\..\\LocalLow\\IronGate\\Valheim\\screenshots\\**" directory
+* copy that file into **\BepInEx\cache\shudnal.NomapPrinter** and rename into **BirdsEye.BraveNewWorld.explored.png**
+* change that file how you like while saving its resolution and format
+* that file will be loaded as explored map layer when you generate BirdsEye map type while in BraveNewWorld world
+* that file will not be reloaded until game relaunch
+
 ## Best mods to use with
 * To place pins immersively in nomap mode you can use [AutoPinSigns](https://valheim.thunderstore.io/package/shudnal/AutoPinSigns/)
 * To see pins without map you can use [Compass](https://www.nexusmods.com/valheim/mods/851)

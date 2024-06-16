@@ -21,8 +21,8 @@
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="F:\Steam\steamapps\common\Valheim\BepInEx\plugins\" />
 		<Message Text="Copied to plugins folder." Importance="High" />
 	</Target>
-	<Target Name="CopyDLLPlugins" AfterTargets="ILRepacker">
+	<Target Name="CopyR2Plugins" AfterTargets="ILRepacker">
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Users\Suden\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\beta\BepInEx\plugins\shudnal-$(SolutionName)\" />
-		<Message Text="Copied to plugins folder." Importance="High" />
+		<Message Text="Copied to r2 folder." Importance="High" />
 	</Target>
 </Project>
