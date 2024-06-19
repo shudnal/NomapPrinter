@@ -5,6 +5,7 @@ using ServerSync;
 using System;
 using System.Linq;
 using System.IO;
+using System.Collections.Generic;
 
 namespace NomapPrinter
 {
@@ -13,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.2.3";
+        public const string pluginVersion = "1.2.4";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -82,6 +83,9 @@ namespace NomapPrinter
         public static ConfigEntry<bool> tablePartsSwap;
 
         public static readonly CustomSyncedValue<string> mapDataFromFile = new CustomSyncedValue<string>(configSync, "mapDataFromFile", "");
+        public static readonly CustomSyncedValue<Dictionary<string, string>> mapDataUnderFogMarkings = new CustomSyncedValue<Dictionary<string, string>>(configSync, "mapDataUnderFogMarkings");
+        public static readonly CustomSyncedValue<Dictionary<string, string>> mapDataOverFogMarkings = new CustomSyncedValue<Dictionary<string, string>>(configSync, "mapDataOverFogMarkings");
+        public static readonly CustomSyncedValue<string> fogTexture = new CustomSyncedValue<string>(configSync, "fogTexture", "");
 
         public static NomapPrinter instance;
 
@@ -182,8 +186,8 @@ namespace NomapPrinter
             localFolder = config("Map storage", "Local folder", "", "Save and load map data from local folder. If relative path is set then the folder will be created at ...\\AppData\\LocalLow\\IronGate\\Valheim");
             sharedFile = config("Map storage", "Shared file", "", "Load map from the file name instead of generating one. File should be available on the server.");
 
-            mapStorage.SettingChanged += (sender, args) => MapViewer.SetupMapFileWatcher();
-            sharedFile.SettingChanged += (sender, args) => MapViewer.SetupMapFileWatcher();
+            mapStorage.SettingChanged += (sender, args) => MapViewer.SetupSharedMapFileWatcher();
+            sharedFile.SettingChanged += (sender, args) => MapViewer.SetupSharedMapFileWatcher();
 
             mapType = config("Map style", "Map type", MapType.Chart, "Type of generated map");
             mapSize = config("Map style", "Map size", MapSize.Normal, "Resolution of generated map. More details means smoother lines but more data will be stored");

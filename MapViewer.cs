@@ -203,7 +203,7 @@ namespace NomapPrinter
             Game.m_noMap = true;
         }
 
-        public static void SetupMapFileWatcher()
+        public static void SetupSharedMapFileWatcher()
         {
             if (sharedFile.Value.IsNullOrWhiteSpace())
                 return;
@@ -530,7 +530,7 @@ namespace NomapPrinter
                 if (!__instance.m_rootObject.transform.Find(objectRootName))
                     AddIngameView(__instance.m_rootObject.transform);
 
-                SetupMapFileWatcher();
+                SetupSharedMapFileWatcher();
             }
         }
 

@@ -71,6 +71,9 @@ namespace NomapPrinter
         private static Color32[] space;
         private static int spaceRes;
 
+        private static Color32[] fog;
+        private static int fogRes;
+
         public static Color32[] Result
         {
             get
@@ -134,12 +137,40 @@ namespace NomapPrinter
             ForestTexture = null;
             Heightmap = null;
             Result = null;
+            fog = null;
         }
 
-        public static IEnumerator OverlayExplorationFog(Texture2D map, bool[] exploration)
+        public static void SetFogTexture(Texture2D fog)
         {
-            map.GetPixels32().CopyTo(MapTexture, 0);
+            SetFogTexture(fog.GetPixels32());
+        }
 
+        public static void SetFogTexture(Color32[] newFog)
+        {
+            fog = new Color32[newFog.Length];
+            fogRes = (int)Math.Sqrt(newFog.Length);
+            newFog.CopyTo(fog, 0);
+        }
+
+        public static void SetMapTexture(Texture2D map)
+        {
+            SetMapTexture(map.GetPixels32());
+        }
+
+        public static void SetMapTexture(Color32[] map)
+        {
+            map.CopyTo(MapTexture, 0);
+        }
+
+        public static IEnumerator OverlayTextureOnMap(Texture2D texture)
+        {
+            texture.GetPixels32().CopyTo(Result, 0);
+
+            yield return OverlayResultOnMap();
+        }
+
+        public static IEnumerator OverlayExplorationFog(bool[] exploration)
+        {
             for (int i = 0; i < ExploredData.Length; i++)
                 ExploredData[i] = false;
 
@@ -310,6 +341,8 @@ namespace NomapPrinter
             {
                 yield return null;
             }
+
+            SetMapTexture(Result);
         }
 
         private static IEnumerator OverlayTexture(Color32[] array1, Color32[] array2) //Tex2 on Tex1
@@ -565,13 +598,28 @@ namespace NomapPrinter
 
         private static IEnumerator StylizeFog()
         {
-            yield return GetPerlin(128, 16);
+            if (fog == null)
+            {
+                yield return GetPerlin(128, 16);
+                fog = Result;
+                fogRes = m_textureSize;
+            }
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < m_textureSize * m_textureSize; i++)
-                    if (!ExploredData[i])
-                        Result[i] = new Color32((byte)(yellowMap.r + (Result[i].r - 128)), (byte)(yellowMap.g + (Result[i].g - 128)), (byte)(yellowMap.b + (Result[i].b - 128)), 255);
+                for (int x = 0; x < m_textureSize; x++)
+                {
+                    for (int y = 0; y < m_textureSize; y++)
+                    {
+                        int pos = x * m_textureSize + y;
+
+                        if (!ExploredData[pos])
+                        {
+                            Color32 fogPix = fog[x % fogRes * fogRes + y % fogRes];
+                            Result[pos] = new Color32((byte)(yellowMap.r + (fogPix.r - 128)), (byte)(yellowMap.g + (fogPix.g - 128)), (byte)(yellowMap.b + (fogPix.b - 128)), 255);
+                        }
+                    }
+                }
             });
 
             internalThread.Start();
