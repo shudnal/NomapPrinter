@@ -147,7 +147,7 @@ namespace NomapPrinter
 
             Game.isModded = true;
 
-            customTextures.ValueChanged += new Action(MapMaker.ResetExploredMap);
+            customTextures.ValueChanged += new Action(MapMaker.ResetExploredMapOnTextureChange);
         }
 
         void Start()
@@ -191,18 +191,19 @@ namespace NomapPrinter
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
             preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
 
-            useCustomExploredLayer = config("Map custom layers - Explored map", "Use custom explored layer", true, "Use custom explored map layer if it was found in config folder or shared from server");
-            syncExploredLayerFromServer = config("Map custom layers - Explored map", "Share custom explored layer from server to clients", false, "Share explored map layer from server to clients. " +
+            useCustomExploredLayer = config("Map custom layers", "Explored map - Enable layer", true, "Use custom explored map layer if it was found in config folder or shared from server");
+            syncExploredLayerFromServer = config("Map custom layers", "Explored map - Share from server", false, "Share explored map layer from server to clients. " +
                                                                                                                                      "\nFile with size more than 7MB will most likely not be loaded with default data rate of 150KB/s." +
                                                                                                                                      "\nSafest way is to share explored world as packed file and place it into mod config folder on the clients");
-            useCustomUnderFogLayer = config("Map custom layers - Under fog", "Use custom under fog layer", true, "Use custom under fog map layer if it was found in config folder or shared from server");
-            syncUnderFogLayerFromServer = config("Map custom layers - Under fog", "Share custom under fog layer from server to clients", true, "Enable server to clients sharing of layer data");
-            
-            useCustomOverFogLayer = config("Map custom layers - Over fog", "Use custom over fog layer", true, "Use custom over fog map layer if it was found in config folder or shared from server");
-            syncOverFogLayerFromServer = config("Map custom layers - Over fog", "Share custom over fog layer from server to clients", true, "Enable server to clients sharing of layer data");
 
-            useCustomFogLayer = config("Map custom layers - Fog texture", "Use custom fog texture", true, "Use custom fog texture if it was found in config folder or shared from server");
-            syncFogLayerFromServer = config("Map custom layers - Fog texture", "Share custom fog texture from server to clients", true, "Enable server to clients sharing of fog texture");
+            useCustomUnderFogLayer = config("Map custom layers", "Under fog - Enable layer", true, "Use custom under fog map layer if it was found in config folder or shared from server");
+            syncUnderFogLayerFromServer = config("Map custom layers", "Under fog - Share from server", true, "Enable server to clients sharing of layer data");
+            
+            useCustomOverFogLayer = config("Map custom layers", "Over fog - Enable layer", true, "Use custom over fog map layer if it was found in config folder or shared from server");
+            syncOverFogLayerFromServer = config("Map custom layers", "Over fog - Share from server", true, "Enable server to clients sharing of layer data");
+
+            useCustomFogLayer = config("Map custom layers", "Fog texture - Enable layer", true, "Use custom fog texture if it was found in config folder or shared from server");
+            syncFogLayerFromServer = config("Map custom layers", "Fog texture - Share from server", true, "Enable server to clients sharing of fog texture");
 
             useCustomExploredLayer.SettingChanged += (sender, args) => ReadCustomTextures();
             useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
@@ -212,6 +213,9 @@ namespace NomapPrinter
             syncUnderFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
             syncOverFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
             syncFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
+
+            useCustomExploredLayer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
+            syncExploredLayerFromServer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
 
             showNearTheTableDistance = config("Map restrictions", "Show map near the table when distance is less than", defaultValue: 10f, "Distance to nearest map table for map to be shown");
             showMapBasePiecesRequirement = config("Map restrictions", "Show map when base pieces near the player is more than", defaultValue: 0, "Count of base pieces surrounding the player should be more than that for map to be shown");
@@ -365,16 +369,16 @@ namespace NomapPrinter
                 foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
                 {
                     if (useCustomExploredLayer.Value && syncExploredLayerFromServer.Value && !textures.ContainsKey("explored"))
-                        CheckTextureType(textures, file, textureType: "explored");
+                        MapMaker.FillTextureLayer(textures, file, layer: "explored");
 
-                    if (useCustomFogLayer.Value && !textures.ContainsKey("fog"))
-                        CheckTextureType(textures, file, textureType: "fog");
+                    if (useCustomFogLayer.Value && syncFogLayerFromServer.Value && !textures.ContainsKey("fog"))
+                        MapMaker.FillTextureLayer(textures, file, layer: "fog");
 
-                    if (useCustomOverFogLayer.Value && !textures.ContainsKey("overfog"))
-                        CheckTextureType(textures, file, textureType: "overfog");
+                    if (useCustomOverFogLayer.Value && syncOverFogLayerFromServer.Value && !textures.ContainsKey("overfog"))
+                        MapMaker.FillTextureLayer(textures, file, layer: "overfog");
 
-                    if (useCustomUnderFogLayer.Value && !textures.ContainsKey("underfog"))
-                        CheckTextureType(textures, file, textureType: "underfog");
+                    if (useCustomUnderFogLayer.Value && syncUnderFogLayerFromServer.Value && !textures.ContainsKey("underfog"))
+                        MapMaker.FillTextureLayer(textures, file, layer: "underfog");
                 };
 
             if (isTexturesWaitingToSync && customTextureSyncer != null)
@@ -399,51 +403,6 @@ namespace NomapPrinter
             customTextures.AssignLocalValue(textures);
             
             isTexturesWaitingToSync = false;
-        }
-
-        private static void CheckTextureType(Dictionary<string, string> textures, FileInfo file, string textureType)
-        {
-            foreach (string filename in CustomTextureFileNames(textureType, ext: "png"))
-                if (!textures.ContainsKey(textureType) && file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        textures[textureType] = Convert.ToBase64String(File.ReadAllBytes(file.FullName));
-                        LogInfo($"Loaded {textureType} from {file.FullName}");
-                        return;
-                    }
-                    catch (Exception e)
-                    {
-                        LogWarning($"Error reading png file ({file.Name})! Error: {e.Message}");
-                    }
-                }
-
-            foreach (string filename in CustomTextureFileNames(textureType, ext: "zpack"))
-                if (!textures.ContainsKey(textureType) && file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        byte[] data = MapMaker.ExploredMapData.GetPackedImageData(file.FullName);
-                        if (data != null)
-                        {
-                            textures[textureType] = Convert.ToBase64String(data);
-                            LogInfo($"Loaded packed {textureType} from {file.FullName}");
-                            return;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        LogWarning($"Error reading packed file ({file.Name})! Error: {e.Message}");
-                    }
-                }
-        }
-
-        private static string[] CustomTextureFileNames(string textureType, string ext)
-        {
-            return new string[2] {
-                    $"{mapType.Value}.{ZNet.instance.GetWorldUID()}.{textureType}.{ext}",
-                    $"{mapType.Value}.{ZNet.instance.GetWorldName()}.{textureType}.{ext}",
-                };
         }
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead), new Type[] { typeof(Switch), typeof(Humanoid), typeof(ItemDrop.ItemData), typeof(bool) })]

@@ -96,7 +96,7 @@ namespace NomapPrinter
                 m_mapTexture.Apply();
 
                 yield return null;
-                
+
                 m_forestTexture.SetPixels(m_forestTextureArray);
                 m_forestTexture.Apply();
 
@@ -155,7 +155,7 @@ namespace NomapPrinter
 
                 mapTextureArray[pos] = GetPixelColor(biome, biomeHeight);
             }
-            
+
             private string CacheFile()
             {
                 return Path.Combine(CacheDirectory(), $"{ZNet.instance.GetWorldName()}_{cacheFileName}");
@@ -236,7 +236,7 @@ namespace NomapPrinter
                 zPackage.Write(m_heightmap.EncodeToPNG());
 
                 string filename = CacheFile();
-                
+
                 try
                 {
                     File.WriteAllBytes(filename, zPackage.GetArray());
@@ -294,56 +294,9 @@ namespace NomapPrinter
                 if (!useCustomExploredLayer.Value)
                     return false;
 
-                if (syncExploredLayerFromServer.Value)
-                {
-                    string mapDataBase64 = customTextures.Value.GetValueSafe("explored");
-                    if (mapDataBase64.IsNullOrWhiteSpace())
-                        return false;
+                exploredMap = GetLayerTexture("explored", syncExploredLayerFromServer.Value);
 
-                    exploredMap = new Texture2D(2, 2);
-                    if (exploredMap.LoadImage(Convert.FromBase64String(mapDataBase64)))
-                    {
-                        LogInfo($"Explored map loaded from server");
-                        return true;
-                    }
-                    else
-                    {
-                        UnityEngine.Object.Destroy(exploredMap);
-                    }
-
-                    return false;
-                }
-
-                foreach (string customFile in ExploredMapFileNames(packed: false))
-                    if (File.Exists(customFile))
-                    {
-                        try
-                        {
-                            exploredMap = new Texture2D(2, 2);
-                            if (exploredMap.LoadImage(File.ReadAllBytes(customFile)))
-                            {
-                                LogInfo($"Explored map loaded from file {customFile}");
-                                return true;
-                            }
-                            else
-                            {
-                                UnityEngine.Object.Destroy(exploredMap);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            LogWarning($"Error reading file ({customFile})! Error: {e.Message}");
-                        }
-                    }
-
-                foreach (string customFile in ExploredMapFileNames(packed: true))
-                    if (File.Exists(customFile) && LoadExploredMapFromFile(customFile))
-                    {
-                        LogInfo($"Explored map loaded from file {customFile}");
-                        return true;
-                    }
-
-                return false;
+                return exploredMap != null;
             }
 
             public bool LoadExploredMap()
@@ -353,7 +306,7 @@ namespace NomapPrinter
 
                 ResetExploredMap();
 
-                return LoadFromCustomFile() || LoadExploredMapFromFile(ExploredMapFileName());
+                return LoadFromCustomFile() || LoadExploredMapFromFile();
             }
 
             public void ResetExploredMap()
@@ -365,8 +318,10 @@ namespace NomapPrinter
                 exploredMapType = mapType.Value;
             }
 
-            private bool LoadExploredMapFromFile(string filename)
+            private bool LoadExploredMapFromFile()
             {
+                string filename = ExploredMapFileName();
+
                 byte[] data = GetPackedImageData(filename);
                 if (data == null)
                     return false;
@@ -480,12 +435,10 @@ namespace NomapPrinter
             exploredMapData?.ResetExploredMap();
         }
 
-        public static string CacheDirectory()
+        public static void ResetExploredMapOnTextureChange()
         {
-            Directory.CreateDirectory(cacheDirectory);
-            string directory = Path.Combine(cacheDirectory, worldUID.ToString());
-            Directory.CreateDirectory(directory);
-            return directory;
+            if (useCustomExploredLayer.Value)
+                exploredMapData?.ResetExploredMap();
         }
 
         public static void GenerateMap()
@@ -514,7 +467,15 @@ namespace NomapPrinter
             instance.StartCoroutine(CreateMap(pregeneration: true));
         }
 
-        public static IEnumerator CreateMap(bool pregeneration = false)
+        private static string CacheDirectory()
+        {
+            Directory.CreateDirectory(cacheDirectory);
+            string directory = Path.Combine(cacheDirectory, worldUID.ToString());
+            Directory.CreateDirectory(directory);
+            return directory;
+        }
+
+        private static IEnumerator CreateMap(bool pregeneration = false)
         {
             isWorking = true;
 
@@ -659,7 +620,7 @@ namespace NomapPrinter
         {
             if (!player.m_customData.TryGetValue(WorldDataName(worldUID), out string exploredMapBase64))
                 return false;
-            
+
             BitArray ba = new BitArray(Utils.Decompress(Convert.FromBase64String(exploredMapBase64)));
 
             if (exploration == null || exploration.Length != ba.Count)
@@ -686,7 +647,7 @@ namespace NomapPrinter
             ba.CopyTo(bytes, 0);
 
             SaveValue(WorldDataName(worldUID), Convert.ToBase64String(Utils.Compress(bytes)));
-            
+
             LogInfo($"Exploration saved in {stopwatch.ElapsedMilliseconds,-4:F2} ms");
 
             void SaveValue(string key, string value)
@@ -867,7 +828,7 @@ namespace NomapPrinter
                         map[i] = Color32.Lerp(map[i], mapClouds[i], lerp[i]);
 
             });
-            
+
             ShowMessage(messageSaving.Value);
 
             internalThread.Start();
@@ -964,29 +925,125 @@ namespace NomapPrinter
 
         private static void OverrideFogTexture()
         {
-            if (customTextures.Value.GetValueSafe("fog").IsNullOrWhiteSpace())
+            Texture2D fog = GetLayerTexture("fog", syncFogLayerFromServer.Value);
+
+            if (fog == null)
                 return;
 
-            Texture2D fog = new Texture2D(2, 2);
-            if (fog.LoadImage(Convert.FromBase64String(customTextures.Value["fog"])))
-                MapGenerator.SetFogTexture(fog);
+            MapGenerator.SetFogTexture(fog);
 
             UnityEngine.Object.Destroy(fog);
         }
 
         private static IEnumerator OverlayMarkingsLayer(bool overFog = false)
         {
-            string mapDataBase64 = customTextures.Value.GetValueSafe(overFog ? "overfog" : "underfog");
-            if (mapDataBase64.IsNullOrWhiteSpace())
-                yield break;
+            Texture2D markings = GetLayerTexture(overFog ? "overfog" : "underfog", 
+                                                 overFog ? syncOverFogLayerFromServer.Value : syncUnderFogLayerFromServer.Value);
 
-            Texture2D markings = new Texture2D(2, 2);
-            if (!markings.LoadImage(Convert.FromBase64String(mapDataBase64)))
+            if (markings == null)
                 yield break;
 
             yield return MapGenerator.OverlayTextureOnMap(markings);
 
             UnityEngine.Object.Destroy(markings);
+        }
+
+        private static string[] CustomTextureFileNames(string textureType, string ext)
+        {
+            return new string[2] {
+                    $"{mapType.Value}.{ZNet.instance.GetWorldUID()}.{textureType}.{ext}",
+                    $"{mapType.Value}.{ZNet.instance.GetWorldName()}.{textureType}.{ext}",
+                };
+        }
+
+        private static Texture2D GetLayerTexture(string layer, bool loadFromServer)
+        {
+            if (!TryGetLayerData(layer, loadFromServer, out byte[] data, out string source))
+                return null;
+
+            Texture2D tex = new Texture2D(2, 2);
+            if (data?.Length == 0 || !tex.LoadImage(data))
+            {
+                UnityEngine.Object.Destroy(tex);
+                return null;
+            }
+
+            LogInfo($"Loaded {layer} layer from {source}");
+            return tex;
+        }
+
+        internal static bool TryGetLayerData(string layer, bool loadFromServer, out byte[] data, out string source)
+        {
+            data = null; source = null;
+            if (loadFromServer)
+            {
+                string mapDataBase64 = customTextures.Value.GetValueSafe(layer);
+                if (mapDataBase64.IsNullOrWhiteSpace())
+                    return false;
+
+                data = Convert.FromBase64String(mapDataBase64);
+                source = "server";
+                return true;
+            }
+            
+            if (Directory.Exists(configDirectory))
+            {
+                foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    data = GetLayerFileData(file, layer);
+                    if (data != null)
+                    {
+                        source = $"file {file.Name}";
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static byte[] GetLayerFileData(FileInfo file, string layer)
+        {
+            foreach (string filename in CustomTextureFileNames(layer, ext: "png"))
+                if (file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        return File.ReadAllBytes(file.FullName);
+                    }
+                    catch (Exception e)
+                    {
+                        LogWarning($"Error reading png file ({file.Name})! Error: {e.Message}");
+                    }
+                }
+
+            foreach (string filename in CustomTextureFileNames(layer, ext: "zpack"))
+                if (file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        return ExploredMapData.GetPackedImageData(file.FullName);
+                    }
+                    catch (Exception e)
+                    {
+                        LogWarning($"Error reading packed file ({file.Name})! Error: {e.Message}");
+                    }
+                }
+
+            return null;
+        }
+
+        internal static void FillTextureLayer(Dictionary<string, string> textures, FileInfo file, string layer)
+        {
+            if (textures.ContainsKey(layer))
+                return;
+
+            byte[] data = GetLayerFileData(file, layer);
+            if (data != null)
+            {
+                textures[layer] = Convert.ToBase64String(data);
+                LogInfo($"Loaded {layer} layer from {file.Name}");
+            }
         }
 
         private static IEnumerator DoubleMapSize(Color32[] map, Color32[] doublemap, int currentMapSize, int mapSize)
@@ -1089,7 +1146,7 @@ namespace NomapPrinter
             return result;
         }
 
-        public static float GetDeepNorthOceanGradient(float x, float y)
+        private static float GetDeepNorthOceanGradient(float x, float y)
         {
             double num = (double)WorldGenerator.WorldAngle(x, y - WorldGenerator.ashlandsYOffset) * 100.0;
             return (float)(((double)DUtils.Length(x, y - WorldGenerator.ashlandsYOffset) - ((double)WorldGenerator.ashlandsMinDistance + num)) / 300.0);

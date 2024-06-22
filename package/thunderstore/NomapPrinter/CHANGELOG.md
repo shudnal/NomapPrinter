@@ -2,7 +2,7 @@
 * new custom layers (visible over fog and under fog)
 * customizable fog texture
 * custom layers synced from server
-* explored map can be synced from server (for small <5MB maps)
+* explored map can be synced from server (for small <5MB files)
 * practically you can now use you own map with exploration fog managed by that mod
 
 # 1.2.3

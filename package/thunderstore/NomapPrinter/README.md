@@ -115,24 +115,18 @@ Disable sharing of explored map texture in "Map custom layers - Explored map" co
 
 Make config look like this
 ```
-[Map custom layers - Explored map]
-Use custom explored layer = true
-Share custom explored layer from server to clients = false
-
-[Map custom layers - Fog texture]
-Use custom fog texture = true
-Share custom fog texture from server to clients = false
-
-[Map custom layers - Over fog]
-Use custom over fog layer = true
-Share custom over fog layer from server to clients = true
-
-[Map custom layers - Under fog]
-Use custom under fog layer = true
-Share custom under fog layer from server to clients = true
+[Map custom layers]
+Explored map - Enable layer = true
+Explored map - Share from server = false
+Under fog - Enable layer = true
+Under fog - Share from server = false
+Over fog - Enable layer = true
+Over fog - Share from server = true
+Fog texture - Enable layer = true
+Fog texture - Share from server = true
 ```
 
-That way you markings layers will be synced from server and explored map and fog will be loaded from local config folder.
+That way both markings layers will be synced from server and explored map and fog will be loaded from local config folder.
 
 ### How to get explored map layer of that mod style
 
