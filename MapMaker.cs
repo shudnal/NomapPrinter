@@ -9,6 +9,7 @@ using static NomapPrinter.NomapPrinter;
 using UnityEngine;
 using System.Diagnostics;
 using HarmonyLib;
+using System.Text;
 
 namespace NomapPrinter
 {
@@ -257,7 +258,7 @@ namespace NomapPrinter
         public class ExploredMapData
         {
             public const string exploredMapFileName = "mapData";
-            public const int version = 1;
+            public const int version = 2;
 
             public Texture2D exploredMap;
             public MapType exploredMapType;
@@ -280,25 +281,40 @@ namespace NomapPrinter
                 return Path.Combine(CacheDirectory(), $"{exploredMapFileName}_{exploredMapType}");
             }
 
-            private string[] ExploredMapFileNameCustomFilesPNG()
+            private string[] ExploredMapFileNames(bool packed)
             {
                 return new string[2] {
-                    Path.Combine(configDirectory, $"{exploredMapType}.{worldUID}.explored.png"),
-                    Path.Combine(configDirectory, $"{exploredMapType}.{ZNet.instance.GetWorldName()}.explored.png"),
-                };
-            }
-
-            private string[] ExploredMapFileNameCustomFilesPacked()
-            {
-                return new string[2] {
-                    Path.Combine(configDirectory, $"{exploredMapType}.{worldUID}.explored.zpack"),
-                    Path.Combine(configDirectory, $"{exploredMapType}.{ZNet.instance.GetWorldName()}.explored.zpack"),
+                    Path.Combine(configDirectory, $"{exploredMapType}.{worldUID}.explored.{(packed ? "zpack" : "png")}"),
+                    Path.Combine(configDirectory, $"{exploredMapType}.{ZNet.instance.GetWorldName()}.explored.{(packed ? "zpack" : "png")}"),
                 };
             }
 
             private bool LoadFromCustomFile()
             {
-                foreach (string customFile in ExploredMapFileNameCustomFilesPNG())
+                if (!useCustomExploredLayer.Value)
+                    return false;
+
+                if (syncExploredLayerFromServer.Value)
+                {
+                    string mapDataBase64 = customTextures.Value.GetValueSafe("explored");
+                    if (mapDataBase64.IsNullOrWhiteSpace())
+                        return false;
+
+                    exploredMap = new Texture2D(2, 2);
+                    if (exploredMap.LoadImage(Convert.FromBase64String(mapDataBase64)))
+                    {
+                        LogInfo($"Explored map loaded from server");
+                        return true;
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(exploredMap);
+                    }
+
+                    return false;
+                }
+
+                foreach (string customFile in ExploredMapFileNames(packed: false))
                     if (File.Exists(customFile))
                     {
                         try
@@ -320,9 +336,12 @@ namespace NomapPrinter
                         }
                     }
 
-                foreach (string customFile in ExploredMapFileNameCustomFilesPacked())
+                foreach (string customFile in ExploredMapFileNames(packed: true))
                     if (File.Exists(customFile) && LoadExploredMapFromFile(customFile))
+                    {
+                        LogInfo($"Explored map loaded from file {customFile}");
                         return true;
+                    }
 
                 return false;
             }
@@ -332,21 +351,45 @@ namespace NomapPrinter
                 if (exploredMap != null && exploredMapType == mapType.Value)
                     return true;
 
+                ResetExploredMap();
+
+                return LoadFromCustomFile() || LoadExploredMapFromFile(ExploredMapFileName());
+            }
+
+            public void ResetExploredMap()
+            {
                 if (exploredMap != null)
                     UnityEngine.Object.Destroy(exploredMap);
 
                 exploredMap = null;
                 exploredMapType = mapType.Value;
-
-                return LoadFromCustomFile() || LoadExploredMapFromFile(ExploredMapFileName());
             }
 
             private bool LoadExploredMapFromFile(string filename)
             {
+                byte[] data = GetPackedImageData(filename);
+                if (data == null)
+                    return false;
+
+                try
+                {
+                    exploredMap = new Texture2D(2, 2);
+                    return exploredMap.LoadImage(data);
+                }
+                catch (Exception e)
+                {
+                    LogWarning($"Error loading map image ({filename})! Error: {e.Message}");
+                }
+
+                return false;
+            }
+
+            public static byte[] GetPackedImageData(string filename)
+            {
                 if (!File.Exists(filename))
                 {
                     LogInfo($"File not found: {filename}");
-                    return false;
+                    return null;
                 }
 
                 byte[] data;
@@ -357,27 +400,37 @@ namespace NomapPrinter
                 catch (Exception e)
                 {
                     LogWarning($"Error reading file ({filename})! Error: {e.Message}");
-                    return false;
+                    return null;
                 }
 
                 ZPackage zPackage = new ZPackage(data);
                 if (version != zPackage.ReadInt())
                 {
                     LogWarning($"World map data ({filename}): Version mismatch");
-                    return false;
+                    return null;
                 }
 
-                try
-                {
-                    exploredMap = new Texture2D(2, 2);
-                    return exploredMap.LoadImage(zPackage.ReadByteArray());
-                }
-                catch (Exception e)
-                {
-                    LogWarning($"Error reading file ({filename})! Error: {e.Message}");
-                }
+                data = zPackage.ReadByteArray();
 
-                return false;
+                byte[] key = new UTF8Encoding().GetBytes(pluginID);
+                for (int i = 0; i < data.Length; i++)
+                    data[i] ^= key[i % key.Length];
+
+                return data;
+            }
+
+            public static byte[] GetPackedImageData(byte[] data)
+            {
+                ZPackage zPackage = new ZPackage();
+                zPackage.Write(version);
+
+                byte[] key = new UTF8Encoding().GetBytes(pluginID);
+                for (int i = 0; i < data.Length; i++)
+                    data[i] ^= key[i % key.Length];
+
+                zPackage.Write(data);
+
+                return zPackage.GetArray();
             }
 
             private void SaveExploredMap()
@@ -385,15 +438,11 @@ namespace NomapPrinter
                 if (exploredMap == null)
                     return;
 
-                ZPackage zPackage = new ZPackage();
-                zPackage.Write(version);
-                zPackage.Write(exploredMap.EncodeToPNG());
-
                 string filename = ExploredMapFileName();
 
                 try
                 {
-                    File.WriteAllBytes(filename, zPackage.GetArray());
+                    File.WriteAllBytes(filename, GetPackedImageData(exploredMap.EncodeToPNG()));
                 }
                 catch (Exception e)
                 {
@@ -425,6 +474,11 @@ namespace NomapPrinter
         private static Texture2D noClouds;
 
         private static bool[] exploration;
+
+        public static void ResetExploredMap()
+        {
+            exploredMapData?.ResetExploredMap();
+        }
 
         public static string CacheDirectory()
         {
@@ -498,13 +552,16 @@ namespace NomapPrinter
                 {
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
 
-                    yield return OverlayMarkingsLayer(overFog: false);
+                    if (useCustomUnderFogLayer.Value)
+                        yield return OverlayMarkingsLayer(overFog: false);
 
-                    OverrideFogTexture();
+                    if (useCustomFogLayer.Value)
+                        OverrideFogTexture();
 
                     yield return MapGenerator.OverlayExplorationFog(exploration);
 
-                    yield return OverlayMarkingsLayer(overFog: true);
+                    if (useCustomOverFogLayer.Value)
+                        yield return OverlayMarkingsLayer(overFog: true);
 
                     yield return ApplyMapTexture(MapGenerator.Result);
 
@@ -907,25 +964,20 @@ namespace NomapPrinter
 
         private static void OverrideFogTexture()
         {
-            if (fogTexture.Value.IsNullOrWhiteSpace())
+            if (customTextures.Value.GetValueSafe("fog").IsNullOrWhiteSpace())
                 return;
 
             Texture2D fog = new Texture2D(2, 2);
-            if (!fog.LoadImage(Convert.FromBase64String(fogTexture.Value)))
-                return;
-
-            MapGenerator.SetFogTexture(fog);
+            if (fog.LoadImage(Convert.FromBase64String(customTextures.Value["fog"])))
+                MapGenerator.SetFogTexture(fog);
 
             UnityEngine.Object.Destroy(fog);
         }
 
         private static IEnumerator OverlayMarkingsLayer(bool overFog = false)
         {
-            Dictionary<string, string> mapData = overFog ? mapDataOverFogMarkings.Value : mapDataUnderFogMarkings.Value;
-            if (mapData == null)
-                yield break;
-
-            if (!mapData.TryGetValue($"{exploredMapData.exploredMapType}.{worldUID}", out string mapDataBase64))
+            string mapDataBase64 = customTextures.Value.GetValueSafe(overFog ? "overfog" : "underfog");
+            if (mapDataBase64.IsNullOrWhiteSpace())
                 yield break;
 
             Texture2D markings = new Texture2D(2, 2);

@@ -1,3 +1,10 @@
+# 1.3.0
+* new custom layers (visible over fog and under fog)
+* customizable fog texture
+* custom layers synced from server
+* explored map can be synced from server (for small <5MB maps)
+* practically you can now use you own map with exploration fog managed by that mod
+
 # 1.2.3
 * option to use custom explored map layer
 
@@ -18,6 +25,9 @@
 * if you used "Character" option in "Data storage" config before that update you will be needed to redraw the map
 * deprecated character map data will be pruned automatically reducing size of character save file
 
+<details>
+<summary><b>Changelog History</b> (<i>click to expand</i>)</summary>
+
 # 1.1.8
 * patch 0.217.46
 
@@ -36,9 +46,6 @@
 
 # 1.1.3
 * ward restrictions
-
-<details>
-<summary><b>Changelog History</b> (<i>click to expand</i>)</summary>
 
 # 1.1.2
 * adjustments for Vanilla map style

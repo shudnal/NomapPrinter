@@ -6,6 +6,9 @@ using System;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
+using static Terminal;
+using System.Collections;
+using UnityEngine;
 
 namespace NomapPrinter
 {
@@ -14,7 +17,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.2.4";
+        public const string pluginVersion = "1.3.0";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -33,6 +36,15 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showSharedMap;
         public static ConfigEntry<bool> preventPinAddition;
 
+        public static ConfigEntry<bool> useCustomExploredLayer;
+        public static ConfigEntry<bool> useCustomUnderFogLayer;
+        public static ConfigEntry<bool> useCustomOverFogLayer;
+        public static ConfigEntry<bool> useCustomFogLayer;
+        public static ConfigEntry<bool> syncExploredLayerFromServer;
+        public static ConfigEntry<bool> syncUnderFogLayerFromServer;
+        public static ConfigEntry<bool> syncOverFogLayerFromServer;
+        public static ConfigEntry<bool> syncFogLayerFromServer;
+        
         public static ConfigEntry<float> showNearTheTableDistance;
         public static ConfigEntry<int> showMapBasePiecesRequirement;
         public static ConfigEntry<int> showMapComfortRequirement;
@@ -83,15 +95,17 @@ namespace NomapPrinter
         public static ConfigEntry<bool> tablePartsSwap;
 
         public static readonly CustomSyncedValue<string> mapDataFromFile = new CustomSyncedValue<string>(configSync, "mapDataFromFile", "");
-        public static readonly CustomSyncedValue<Dictionary<string, string>> mapDataUnderFogMarkings = new CustomSyncedValue<Dictionary<string, string>>(configSync, "mapDataUnderFogMarkings");
-        public static readonly CustomSyncedValue<Dictionary<string, string>> mapDataOverFogMarkings = new CustomSyncedValue<Dictionary<string, string>>(configSync, "mapDataOverFogMarkings");
-        public static readonly CustomSyncedValue<string> fogTexture = new CustomSyncedValue<string>(configSync, "fogTexture", "");
+        public static readonly CustomSyncedValue<Dictionary<string, string>> customTextures = new CustomSyncedValue<Dictionary<string, string>>(configSync, "customTextures", new Dictionary<string, string>(), Priority.First);
 
         public static NomapPrinter instance;
 
         public static string localPath;
         public static string cacheDirectory;
         public static string configDirectory;
+
+        public static FileSystemWatcher configFolderWatcher;
+        public static IEnumerator customTextureSyncer;
+        public static bool isTexturesWaitingToSync;
 
         public enum MapType
         {
@@ -132,6 +146,8 @@ namespace NomapPrinter
             _ = configSync.AddLockingConfigEntry(configLocked);
 
             Game.isModded = true;
+
+            customTextures.ValueChanged += new Action(MapMaker.ResetExploredMap);
         }
 
         void Start()
@@ -174,6 +190,28 @@ namespace NomapPrinter
             allowInteractiveMapOnWrite = config("Map", "Show interactive map on record discoveries", false, "Show interactive original game map on record discoveries part of map table used");
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
             preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
+
+            useCustomExploredLayer = config("Map custom layers - Explored map", "Use custom explored layer", true, "Use custom explored map layer if it was found in config folder or shared from server");
+            syncExploredLayerFromServer = config("Map custom layers - Explored map", "Share custom explored layer from server to clients", false, "Share explored map layer from server to clients. " +
+                                                                                                                                     "\nFile with size more than 7MB will most likely not be loaded with default data rate of 150KB/s." +
+                                                                                                                                     "\nSafest way is to share explored world as packed file and place it into mod config folder on the clients");
+            useCustomUnderFogLayer = config("Map custom layers - Under fog", "Use custom under fog layer", true, "Use custom under fog map layer if it was found in config folder or shared from server");
+            syncUnderFogLayerFromServer = config("Map custom layers - Under fog", "Share custom under fog layer from server to clients", true, "Enable server to clients sharing of layer data");
+            
+            useCustomOverFogLayer = config("Map custom layers - Over fog", "Use custom over fog layer", true, "Use custom over fog map layer if it was found in config folder or shared from server");
+            syncOverFogLayerFromServer = config("Map custom layers - Over fog", "Share custom over fog layer from server to clients", true, "Enable server to clients sharing of layer data");
+
+            useCustomFogLayer = config("Map custom layers - Fog texture", "Use custom fog texture", true, "Use custom fog texture if it was found in config folder or shared from server");
+            syncFogLayerFromServer = config("Map custom layers - Fog texture", "Share custom fog texture from server to clients", true, "Enable server to clients sharing of fog texture");
+
+            useCustomExploredLayer.SettingChanged += (sender, args) => ReadCustomTextures();
+            useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
+            useCustomOverFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
+            useCustomFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
+            syncExploredLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
+            syncUnderFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
+            syncOverFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
+            syncFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
 
             showNearTheTableDistance = config("Map restrictions", "Show map near the table when distance is less than", defaultValue: 10f, "Distance to nearest map table for map to be shown");
             showMapBasePiecesRequirement = config("Map restrictions", "Show map when base pieces near the player is more than", defaultValue: 0, "Count of base pieces surrounding the player should be more than that for map to be shown");
@@ -234,6 +272,30 @@ namespace NomapPrinter
             localPath = Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
             cacheDirectory = Path.Combine(Paths.CachePath, pluginID);
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
+
+            InitTerminalCommands();
+        }
+
+        public void InitTerminalCommands()
+        {
+            new ConsoleCommand("repackpng", "Repack png file into nonhumanreadable format", delegate (ConsoleEventArgs args)
+            {
+                if (args.Length >= 2)
+                {
+                    string filename = args.FullLine.Substring(args[0].Length + 1).Trim();
+                    if (Path.GetDirectoryName(filename).IsNullOrWhiteSpace())
+                        filename = Path.Combine(configDirectory, filename);
+
+                    string packedfilename = Path.ChangeExtension(filename, ".zpack");
+                    File.WriteAllBytes(packedfilename, MapMaker.ExploredMapData.GetPackedImageData(File.ReadAllBytes(filename)));
+
+                    args.Context.AddString($"Saved packed file {Path.GetFileName(packedfilename)}\n");
+                }
+                else
+                {
+                    args.Context.AddString("Syntax: repackpng [filename]");
+                }
+            }, isCheat: false, isNetwork: false, onlyServer: false, isSecret: false, allowInDevBuild: false, () => new DirectoryInfo(configDirectory).GetFiles("*.png").Select(file => file.Name).ToList(), alwaysRefreshTabOptions: true);
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
@@ -267,6 +329,121 @@ namespace NomapPrinter
                 return;
 
             MessageHud.instance.ShowMessage(type, text, 1);
+        }
+
+        public static void SetupConfigWatcher(bool enable)
+        {
+            if (ZNet.instance == null || !ZNet.instance.IsServer())
+                return;
+
+            if (configFolderWatcher == null)
+            {
+                Directory.CreateDirectory(configDirectory);
+                configFolderWatcher = new FileSystemWatcher(configDirectory);
+                configFolderWatcher.Changed += new FileSystemEventHandler(ReadCustomTextures);
+                configFolderWatcher.Created += new FileSystemEventHandler(ReadCustomTextures);
+                configFolderWatcher.Deleted += new FileSystemEventHandler(ReadCustomTextures);
+                configFolderWatcher.Renamed += new RenamedEventHandler(ReadCustomTextures);
+                configFolderWatcher.IncludeSubdirectories = true;
+                configFolderWatcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
+            }
+
+            configFolderWatcher.EnableRaisingEvents = enable;
+            
+            if (enable)
+                ReadCustomTextures();
+        }
+
+        private static void ReadCustomTextures(object sender = null, FileSystemEventArgs eargs = null)
+        {
+            if (ZNet.instance == null || !ZNet.instance.IsServer())
+                return;
+
+            Dictionary<string, string> textures = new Dictionary<string, string>();
+
+            if (ZNet.instance && ZNet.World != null && Directory.Exists(configDirectory))
+                foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    if (useCustomExploredLayer.Value && syncExploredLayerFromServer.Value && !textures.ContainsKey("explored"))
+                        CheckTextureType(textures, file, textureType: "explored");
+
+                    if (useCustomFogLayer.Value && !textures.ContainsKey("fog"))
+                        CheckTextureType(textures, file, textureType: "fog");
+
+                    if (useCustomOverFogLayer.Value && !textures.ContainsKey("overfog"))
+                        CheckTextureType(textures, file, textureType: "overfog");
+
+                    if (useCustomUnderFogLayer.Value && !textures.ContainsKey("underfog"))
+                        CheckTextureType(textures, file, textureType: "underfog");
+                };
+
+            if (isTexturesWaitingToSync && customTextureSyncer != null)
+            {
+                instance.StopCoroutine(customTextureSyncer);
+                customTextureSyncer = null;
+            }
+
+            customTextureSyncer = CustomTexturesSync(textures);
+
+            instance.StartCoroutine(customTextureSyncer);
+        }
+
+        private static IEnumerator CustomTexturesSync(Dictionary<string, string> textures)
+        {
+            isTexturesWaitingToSync = true;
+
+            yield return new WaitForSeconds(2f);
+
+            yield return new WaitWhile(() => ConfigSync.ProcessingServerUpdate);
+
+            customTextures.AssignLocalValue(textures);
+            
+            isTexturesWaitingToSync = false;
+        }
+
+        private static void CheckTextureType(Dictionary<string, string> textures, FileInfo file, string textureType)
+        {
+            foreach (string filename in CustomTextureFileNames(textureType, ext: "png"))
+                if (!textures.ContainsKey(textureType) && file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        textures[textureType] = Convert.ToBase64String(File.ReadAllBytes(file.FullName));
+                        LogInfo($"Loaded {textureType} from {file.FullName}");
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        LogWarning($"Error reading png file ({file.Name})! Error: {e.Message}");
+                    }
+                }
+
+            foreach (string filename in CustomTextureFileNames(textureType, ext: "zpack"))
+                if (!textures.ContainsKey(textureType) && file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        byte[] data = MapMaker.ExploredMapData.GetPackedImageData(file.FullName);
+                        if (data != null)
+                        {
+                            textures[textureType] = Convert.ToBase64String(data);
+                            LogInfo($"Loaded packed {textureType} from {file.FullName}");
+                            return;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogWarning($"Error reading packed file ({file.Name})! Error: {e.Message}");
+                    }
+                }
+        }
+
+        private static string[] CustomTextureFileNames(string textureType, string ext)
+        {
+            return new string[2] {
+                    $"{mapType.Value}.{ZNet.instance.GetWorldUID()}.{textureType}.{ext}",
+                    $"{mapType.Value}.{ZNet.instance.GetWorldName()}.{textureType}.{ext}",
+                };
         }
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead), new Type[] { typeof(Switch), typeof(Humanoid), typeof(ItemDrop.ItemData), typeof(bool) })]
@@ -335,5 +512,18 @@ namespace NomapPrinter
                 __instance.m_customData.Where(data => data.Key.StartsWith(dataPrefix)).ToList().Do(data => __instance.m_customData.Remove(data.Key));
             }
         }
+
+        [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start))]
+        public static class ZoneSystem_Start_CustomTexturesWatcherEnable
+        {
+            public static void Postfix() => SetupConfigWatcher(enable: true);
+        }
+
+        [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.OnDestroy))]
+        public static class ZoneSystem_OnDestroy_CustomTexturesWatcherDisable
+        {
+            public static void Postfix() => SetupConfigWatcher(enable: false);
+        }
+        
     }
 }

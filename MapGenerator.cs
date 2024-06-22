@@ -598,7 +598,8 @@ namespace NomapPrinter
 
         private static IEnumerator StylizeFog()
         {
-            if (fog == null)
+            bool customFog = fog != null;
+            if (!customFog)
             {
                 yield return GetPerlin(128, 16);
                 fog = Result;
@@ -616,7 +617,10 @@ namespace NomapPrinter
                         if (!ExploredData[pos])
                         {
                             Color32 fogPix = fog[x % fogRes * fogRes + y % fogRes];
-                            Result[pos] = new Color32((byte)(yellowMap.r + (fogPix.r - 128)), (byte)(yellowMap.g + (fogPix.g - 128)), (byte)(yellowMap.b + (fogPix.b - 128)), 255);
+                            if (customFog)
+                                Result[pos] = fogPix;
+                            else
+                                Result[pos] = new Color32((byte)(yellowMap.r + (fogPix.r - 128)), (byte)(yellowMap.g + (fogPix.g - 128)), (byte)(yellowMap.b + (fogPix.b - 128)), 255);
                         }
                     }
                 }

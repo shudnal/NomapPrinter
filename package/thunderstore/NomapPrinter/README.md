@@ -39,18 +39,107 @@ Map content will be automatically updated on file change.
 * set to default zoom by right mouse click
 * centered at spawn point by middle mouse click
 
-## Custom explored map
+## Custom map layers
 
-You can use your own variant of explored map. It will be overlayed by exploration fog using style you chose.
+You can use your own variants of 
+* explored map layer
+* fog texture
+* under fog layer (for custom markings)
+* over fog layer (for custom markings)
 
-Map data must be stored in 4096x4096 PNG file named "{MapType}.{WorldName}.explored.png" and placed into **\BepInEx\config\shudnal.NomapPrinter** directory.
+That layers should be placed into **\BepInEx\config\shudnal.NomapPrinter** directory as PNG files and named accordingly:
+* "{MapType}.{WorldName}.explored.png" for explored map, nontransparent, resolution must be 4096x4096
+* "{MapType}.{WorldName}.underfog.png" for under fog layer, transparent with only needed markings, resolution must be 4096x4096
+* "{MapType}.{WorldName}.overfog.png" for over fog layer, transparent with only needed markings, resolution must be 4096x4096 
+* "{MapType}.{WorldName}.fog.png" for fog texture, nontransparent, any resolution, the pattern will be repeated
 
 If you have several worlds with similar name then instead on world name you can use numerical world ID. To get world ID without using any other mod you can generate map using that mod and check **\BepInEx\cache\shudnal.NomapPrinter** directory. There will be folders named as world ID. One of them will be your world.
 
-For example you have world named ***BraveNewWorld*** and you use ***Birds Eye*** map type.
-To get full explored map you have to 
+Acceptable map types: 
+* BirdsEye
+* Topographical
+* Chart 
+* OldChart
+
+### File repacking
+
+You can use ingame console command `repackpng [filename]` to make png file nonhumanreadable to prevent clients from opening explored map or markings.
+
+That command works for png files located in **\\BepInEx\\config\\shudnal.NomapPrinter**. You can cycle through files available in the folder by pressing TAB.
+
+The command will create the file with extension *.zpack which you can use instead of any custom layer or fog png file.
+
+### File synchronization from server
+
+Layers files can be synchronized from server to all clients if placed into **\\BepInEx\\config\\shudnal.NomapPrinter** directory on the server. That directory will be created automatically on the server.
+
+The total volume of one world files should not exceed ~7-8 MB otherwise it is better to place some files into shared config folder and exchange it via modpacks or manually placing it into clients' config folder. 
+
+By default only underfog, overfog and fog textures will automatically be shared from server to clients on file change as they most likely have rather small size.
+
+Custom layers could be either loaded from server or loaded from local config folder. If you have "share from server" option enabled for some layer and there is no corresponding file on the server then that layer will not be loaded from local config folder.
+
+Safest solution is to place repacked explored map and fog texture into config folder into modpack and disable sharing it from server and only share markings layers from the server.
+
+### Example of setting custom layers to work
+
+For that example we have world named ***BraveNewWorld*** and want to use ***Birds Eye*** map type.
+
+We want to use all custom layers and fog texture.
+
+Explored map will not be changing often. Markings will be changed often. Fog will not be changed.
+
+### Share explored map and fog texture in modpack
+
+Aside of required files (icon.png, manifest.json, README.md) in modpack archive you should 
+* create **\\config\\shudnal.NomapPrinter** folder 
+* place **BirdsEye.BraveNewWorld.explored.png** and **BirdsEye.BraveNewWorld.fog.png** files in that folder
+
+That files will be copied into **\\BepInEx\\config\\** on any client automatically when they install/update the modpack.
+
+You can see working examples of modpack config folder in [RelicHeim](https://thunderstore.io/c/valheim/p/JewelHeim/RelicHeim/) or [EpicValheim](https://thunderstore.io/c/valheim/p/EpicValheim/EpicValheim/) modpacks.
+
+### Share markings layers
+
+Place underfog and overfog layers files
+* **BirdsEye.BraveNewWorld.underfog.png**
+* **BirdsEye.BraveNewWorld.overfog.png**
+
+on the server into **\\BepInEx\\config\\shudnal.NomapPrinter**.
+
+### Setup server config values
+
+Disable sharing of fog texture in "Map custom layers - Fog texture" config section.
+
+Disable sharing of explored map texture in "Map custom layers - Explored map" config section.
+
+Make config look like this
+```
+[Map custom layers - Explored map]
+Use custom explored layer = true
+Share custom explored layer from server to clients = false
+
+[Map custom layers - Fog texture]
+Use custom fog texture = true
+Share custom fog texture from server to clients = false
+
+[Map custom layers - Over fog]
+Use custom over fog layer = true
+Share custom over fog layer from server to clients = true
+
+[Map custom layers - Under fog]
+Use custom under fog layer = true
+Share custom under fog layer from server to clients = true
+```
+
+That way you markings layers will be synced from server and explored map and fog will be loaded from local config folder.
+
+### How to get explored map layer of that mod style
+
+To get full explored map you should
 * relaunch the game
-* login into the world and use "exploremap" command
+* login into the world using new character (to not mess the map on the main character)
+* use "exploremap" command
 * choose **Normal map** size, **Birds Eye** map type
 * disable **Show map pins** option
 * enable **Save to file** option and leave **Save to file path** empty
@@ -58,8 +147,6 @@ To get full explored map you have to
 * file **BirdsEye.BraveNewWorld.png** will be placed into "**%appdata%\\..\\LocalLow\\IronGate\\Valheim\\screenshots\\**" directory
 * copy that file into **\BepInEx\cache\shudnal.NomapPrinter** and rename into **BirdsEye.BraveNewWorld.explored.png**
 * change that file how you like while saving its resolution and format
-* that file will be loaded as explored map layer when you generate BirdsEye map type while in BraveNewWorld world
-* that file will not be reloaded until game relaunch
 
 ## Best mods to use with
 * To place pins immersively in nomap mode you can use [AutoPinSigns](https://valheim.thunderstore.io/package/shudnal/AutoPinSigns/)
