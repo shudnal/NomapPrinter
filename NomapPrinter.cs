@@ -5,10 +5,7 @@ using ServerSync;
 using System;
 using System.Linq;
 using System.IO;
-using System.Collections.Generic;
 using static Terminal;
-using System.Collections;
-using UnityEngine;
 
 namespace NomapPrinter
 {
@@ -17,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.0";
+        public const string pluginVersion = "1.3.1";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -95,7 +92,11 @@ namespace NomapPrinter
         public static ConfigEntry<bool> tablePartsSwap;
 
         public static readonly CustomSyncedValue<string> mapDataFromFile = new CustomSyncedValue<string>(configSync, "mapDataFromFile", "");
-        public static readonly CustomSyncedValue<Dictionary<string, string>> customTextures = new CustomSyncedValue<Dictionary<string, string>>(configSync, "customTextures", new Dictionary<string, string>(), Priority.First);
+
+        public static readonly CustomSyncedValue<string> customLayerExplored = new CustomSyncedValue<string>(configSync, "Custom explored layer", "");
+        public static readonly CustomSyncedValue<string> customLayerFog = new CustomSyncedValue<string>(configSync, "Custom fog layer", "");
+        public static readonly CustomSyncedValue<string> customLayerOverfog = new CustomSyncedValue<string>(configSync, "Custom overfog layer", "");
+        public static readonly CustomSyncedValue<string> customLayerUnderfog = new CustomSyncedValue<string>(configSync, "Custom underfog layer", "");
 
         public static NomapPrinter instance;
 
@@ -104,8 +105,6 @@ namespace NomapPrinter
         public static string configDirectory;
 
         public static FileSystemWatcher configFolderWatcher;
-        public static IEnumerator customTextureSyncer;
-        public static bool isTexturesWaitingToSync;
 
         public enum MapType
         {
@@ -147,7 +146,7 @@ namespace NomapPrinter
 
             Game.isModded = true;
 
-            customTextures.ValueChanged += new Action(MapMaker.ResetExploredMapOnTextureChange);
+            customLayerExplored.ValueChanged += new Action(MapMaker.ResetExploredMapOnTextureChange);
         }
 
         void Start()
@@ -205,14 +204,14 @@ namespace NomapPrinter
             useCustomFogLayer = config("Map custom layers", "Fog texture - Enable layer", true, "Use custom fog texture if it was found in config folder or shared from server");
             syncFogLayerFromServer = config("Map custom layers", "Fog texture - Share from server", true, "Enable server to clients sharing of fog texture");
 
-            useCustomExploredLayer.SettingChanged += (sender, args) => ReadCustomTextures();
-            useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
-            useCustomOverFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
-            useCustomFogLayer.SettingChanged += (sender, args) => ReadCustomTextures();
-            syncExploredLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
-            syncUnderFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
-            syncOverFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
-            syncFogLayerFromServer.SettingChanged += (sender, args) => ReadCustomTextures();
+            useCustomExploredLayer.SettingChanged += (sender, args) => ReadTextureFiles();
+            useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadTextureFiles();
+            useCustomOverFogLayer.SettingChanged += (sender, args) => ReadTextureFiles();
+            useCustomFogLayer.SettingChanged += (sender, args) => ReadTextureFiles();
+            syncExploredLayerFromServer.SettingChanged += (sender, args) => ReadTextureFiles();
+            syncUnderFogLayerFromServer.SettingChanged += (sender, args) => ReadTextureFiles();
+            syncOverFogLayerFromServer.SettingChanged += (sender, args) => ReadTextureFiles();
+            syncFogLayerFromServer.SettingChanged += (sender, args) => ReadTextureFiles();
 
             useCustomExploredLayer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
             syncExploredLayerFromServer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
@@ -335,7 +334,7 @@ namespace NomapPrinter
             MessageHud.instance.ShowMessage(type, text, 1);
         }
 
-        public static void SetupConfigWatcher(bool enable)
+        public static void SetupConfigWatcher(bool enabled)
         {
             if (ZNet.instance == null || !ZNet.instance.IsServer())
                 return;
@@ -344,65 +343,64 @@ namespace NomapPrinter
             {
                 Directory.CreateDirectory(configDirectory);
                 configFolderWatcher = new FileSystemWatcher(configDirectory);
-                configFolderWatcher.Changed += new FileSystemEventHandler(ReadCustomTextures);
-                configFolderWatcher.Created += new FileSystemEventHandler(ReadCustomTextures);
-                configFolderWatcher.Deleted += new FileSystemEventHandler(ReadCustomTextures);
-                configFolderWatcher.Renamed += new RenamedEventHandler(ReadCustomTextures);
+                configFolderWatcher.Changed += new FileSystemEventHandler(ReadTextureFile);
+                configFolderWatcher.Created += new FileSystemEventHandler(ReadTextureFile);
+                configFolderWatcher.Deleted += new FileSystemEventHandler(ReadTextureFile);
+                configFolderWatcher.Renamed += new RenamedEventHandler(ReadTextureFile);
                 configFolderWatcher.IncludeSubdirectories = true;
                 configFolderWatcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
             }
 
-            configFolderWatcher.EnableRaisingEvents = enable;
-            
-            if (enable)
-                ReadCustomTextures();
+            configFolderWatcher.EnableRaisingEvents = enabled;
+
+            ClearCustomTextures();
+            if (enabled)
+                ReadTextureFiles(initial: true);
         }
 
-        private static void ReadCustomTextures(object sender = null, FileSystemEventArgs eargs = null)
+        private static void ClearCustomTextures()
+        {
+            customLayerExplored.AssignValueSafe("");
+            customLayerFog.AssignValueSafe("");
+            customLayerUnderfog.AssignValueSafe("");
+            customLayerOverfog.AssignValueSafe("");
+        }
+
+        private static void ReadTextureFiles(bool initial = false)
+        {
+            foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
+                ReadCustomTexture(file.Name, file.FullName, initial);
+        }
+
+        private static void ReadTextureFile(object sender, FileSystemEventArgs eargs)
+        {
+            ReadCustomTexture(eargs.Name, eargs.FullPath);
+            if (eargs is RenamedEventArgs)
+                ReadCustomTexture((eargs as RenamedEventArgs).OldName, eargs.FullPath, initial: true);
+        }
+
+        private static void ReadCustomTexture(string filename, string fullname, bool initial = false)
         {
             if (ZNet.instance == null || !ZNet.instance.IsServer())
                 return;
 
-            Dictionary<string, string> textures = new Dictionary<string, string>();
-
-            if (ZNet.instance && ZNet.World != null && Directory.Exists(configDirectory))
-                foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
-                {
-                    if (useCustomExploredLayer.Value && syncExploredLayerFromServer.Value && !textures.ContainsKey("explored"))
-                        MapMaker.FillTextureLayer(textures, file, layer: "explored");
-
-                    if (useCustomFogLayer.Value && syncFogLayerFromServer.Value && !textures.ContainsKey("fog"))
-                        MapMaker.FillTextureLayer(textures, file, layer: "fog");
-
-                    if (useCustomOverFogLayer.Value && syncOverFogLayerFromServer.Value && !textures.ContainsKey("overfog"))
-                        MapMaker.FillTextureLayer(textures, file, layer: "overfog");
-
-                    if (useCustomUnderFogLayer.Value && syncUnderFogLayerFromServer.Value && !textures.ContainsKey("underfog"))
-                        MapMaker.FillTextureLayer(textures, file, layer: "underfog");
-                };
-
-            if (isTexturesWaitingToSync && customTextureSyncer != null)
-            {
-                instance.StopCoroutine(customTextureSyncer);
-                customTextureSyncer = null;
-            }
-
-            customTextureSyncer = CustomTexturesSync(textures);
-
-            instance.StartCoroutine(customTextureSyncer);
+            AssignCustomSyncedValue(customLayerExplored, initial, useCustomExploredLayer.Value && syncExploredLayerFromServer.Value ? MapMaker.GetTextureString(filename, fullname, layer: "explored") : "");
+            AssignCustomSyncedValue(customLayerFog, initial, useCustomFogLayer.Value && syncFogLayerFromServer.Value ? MapMaker.GetTextureString(filename, fullname, layer: "fog") : "");
+            AssignCustomSyncedValue(customLayerOverfog, initial, useCustomOverFogLayer.Value && syncOverFogLayerFromServer.Value ? MapMaker.GetTextureString(filename, fullname, layer: "overfog") : "");
+            AssignCustomSyncedValue(customLayerUnderfog, initial, useCustomUnderFogLayer.Value && syncUnderFogLayerFromServer.Value ? MapMaker.GetTextureString(filename, fullname, layer: "underfog") : "");
         }
 
-        private static IEnumerator CustomTexturesSync(Dictionary<string, string> textures)
+        private static void AssignCustomSyncedValue(CustomSyncedValue<string> syncedValue, bool initial, string content)
         {
-            isTexturesWaitingToSync = true;
+            if (content == null)
+                return;
 
-            yield return new WaitForSeconds(2f);
-
-            yield return new WaitWhile(() => ConfigSync.ProcessingServerUpdate);
-
-            customTextures.AssignLocalValue(textures);
-            
-            isTexturesWaitingToSync = false;
+            if (content == "")
+                syncedValue.AssignValueIfChanged(content);
+            else if (initial)
+                syncedValue.AssignValueSafe(content);
+            else
+                syncedValue.AssignValueIfChanged(content);
         }
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead), new Type[] { typeof(Switch), typeof(Humanoid), typeof(ItemDrop.ItemData), typeof(bool) })]
@@ -475,13 +473,13 @@ namespace NomapPrinter
         [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start))]
         public static class ZoneSystem_Start_CustomTexturesWatcherEnable
         {
-            public static void Postfix() => SetupConfigWatcher(enable: true);
+            public static void Postfix() => SetupConfigWatcher(enabled: true);
         }
 
         [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.OnDestroy))]
         public static class ZoneSystem_OnDestroy_CustomTexturesWatcherDisable
         {
-            public static void Postfix() => SetupConfigWatcher(enable: false);
+            public static void Postfix() => SetupConfigWatcher(enabled: false);
         }
         
     }

@@ -1,3 +1,6 @@
+# 1.3.1
+* custom layers synchronization optimized and refined
+
 # 1.3.0
 * new custom layers (visible over fog and under fog)
 * customizable fog texture

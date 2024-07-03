@@ -405,7 +405,7 @@ namespace NomapPrinter
                 LogInfo($"Can't find file ({filename})!");
             }
 
-            mapDataFromFile.AssignLocalValue(fileData);
+            mapDataFromFile.AssignValueSafe(fileData);
         }
 
         private static void LoadMapFromSharedValue()

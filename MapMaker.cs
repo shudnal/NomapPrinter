@@ -972,12 +972,12 @@ namespace NomapPrinter
             return tex;
         }
 
-        internal static bool TryGetLayerData(string layer, bool loadFromServer, out byte[] data, out string source)
+        private static bool TryGetLayerData(string layer, bool loadFromServer, out byte[] data, out string source)
         {
             data = null; source = null;
             if (loadFromServer)
             {
-                string mapDataBase64 = customTextures.Value.GetValueSafe(layer);
+                string mapDataBase64 = GetServerTextureString(layer);
                 if (mapDataBase64.IsNullOrWhiteSpace())
                     return false;
 
@@ -990,7 +990,7 @@ namespace NomapPrinter
             {
                 foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
                 {
-                    data = GetLayerFileData(file, layer);
+                    data = GetLayerFileData(file.Name, file.FullName, layer);
                     if (data != null)
                     {
                         source = $"file {file.Name}";
@@ -998,52 +998,62 @@ namespace NomapPrinter
                     }
                 }
             }
-
             return false;
         }
 
-        private static byte[] GetLayerFileData(FileInfo file, string layer)
+        private static string GetServerTextureString(string layer)
+        {
+            return layer switch
+            {
+                "explored" => customLayerExplored.Value,
+                "fog" => customLayerFog.Value,
+                "underfog" => customLayerUnderfog.Value,
+                "overfog" => customLayerOverfog.Value,
+                _ => ""
+            };
+        }
+
+        private static byte[] GetLayerFileData(string name, string fullname, string layer)
         {
             foreach (string filename in CustomTextureFileNames(layer, ext: "png"))
-                if (file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                if (name.Equals(filename, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
-                        return File.ReadAllBytes(file.FullName);
+                        return File.ReadAllBytes(fullname);
                     }
                     catch (Exception e)
                     {
-                        LogWarning($"Error reading png file ({file.Name})! Error: {e.Message}");
+                        LogWarning($"Error reading png file ({name})! Error: {e.Message}");
                     }
                 }
 
             foreach (string filename in CustomTextureFileNames(layer, ext: "zpack"))
-                if (file.Name.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                if (name.Equals(filename, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
-                        return ExploredMapData.GetPackedImageData(file.FullName);
+                        return ExploredMapData.GetPackedImageData(fullname);
                     }
                     catch (Exception e)
                     {
-                        LogWarning($"Error reading packed file ({file.Name})! Error: {e.Message}");
+                        LogWarning($"Error reading packed file ({name})! Error: {e.Message}");
                     }
                 }
 
             return null;
         }
 
-        internal static void FillTextureLayer(Dictionary<string, string> textures, FileInfo file, string layer)
+        internal static string GetTextureString(string filename, string fullname, string layer)
         {
-            if (textures.ContainsKey(layer))
-                return;
-
-            byte[] data = GetLayerFileData(file, layer);
+            byte[] data = GetLayerFileData(filename, fullname, layer);
             if (data != null)
             {
-                textures[layer] = Convert.ToBase64String(data);
-                LogInfo($"Loaded {layer} layer from {file.Name}");
+                LogInfo($"Loaded {layer} layer from {filename}");
+                return Convert.ToBase64String(data);
             }
+
+            return null;
         }
 
         private static IEnumerator DoubleMapSize(Color32[] map, Color32[] doublemap, int currentMapSize, int mapSize)
