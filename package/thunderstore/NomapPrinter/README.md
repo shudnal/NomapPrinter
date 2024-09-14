@@ -23,6 +23,7 @@ Map content will be automatically updated on file change.
 * 4 different styles of map with topographical lines
 * configurable pins on map
 * pins config is server synced
+* Full gamepad support
 
 ## Pins default config
 * pins only shows in explored part of the map
@@ -119,11 +120,11 @@ Make config look like this
 Explored map - Enable layer = true
 Explored map - Share from server = false
 Under fog - Enable layer = true
-Under fog - Share from server = false
+Under fog - Share from server = true
 Over fog - Enable layer = true
 Over fog - Share from server = true
 Fog texture - Enable layer = true
-Fog texture - Share from server = true
+Fog texture - Share from server = false
 ```
 
 That way both markings layers will be synced from server and explored map and fog will be loaded from local config folder.
@@ -148,7 +149,6 @@ To get full explored map you should
 
 ## Compatibility:
 * This mod interacts with very little of the game code, conflicts with other mods are pretty unlikely
-* Gamepad is not supported for ingame map window
 * It should be compatible with mods adding new biomes on map (if the biome color is set)
 * It is compatible with EpicLoot map pins
 

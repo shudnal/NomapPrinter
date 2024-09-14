@@ -14,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.2";
+        public const string pluginVersion = "1.3.3";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -59,6 +59,8 @@ namespace NomapPrinter
         public static ConfigEntry<float> pinScale;
         public static ConfigEntry<bool> preserveSharedMapFog;
         public static ConfigEntry<float> worldSize;
+        public static ConfigEntry<float> mapGamepadZoomSpeed;
+        public static ConfigEntry<float> mapGamepadMoveSpeed;
 
         public static ConfigEntry<bool> showPins;
         public static ConfigEntry<bool> showExploredPins;
@@ -165,11 +167,6 @@ namespace NomapPrinter
             MapViewer.Update();
         }
 
-        void OnGUI()
-        {
-            MapViewer.OnGUI();
-        }
-
         void OnDestroy()
         {
             harmony?.UnpatchSelf();
@@ -239,6 +236,8 @@ namespace NomapPrinter
             pinScale = config("Map style extended", "Pin scale", 1.0f, "Pin scale");
             preserveSharedMapFog = config("Map style extended", "Preserve shared map fog tint for vanilla map", true, "Generate Vanilla map with shared map fog tint");
             worldSize = config("Map style extended", "World size", 10500f, "Land outside of that radius will be ignored");
+            mapGamepadZoomSpeed = config("Map style extended", "Map gamepad zoom speed", 1f, "Speed of map zoom while using gamepad. [Not Synced with Server]", false);
+            mapGamepadMoveSpeed = config("Map style extended", "Map gamepad move speed", 1f, "Speed of map move while using gamepad. [Not Synced with Server]", false);
 
             messageStart = config("Messages", "Drawing begin", "Remembering travels...", "Center message when drawing is started. [Not Synced with Server]", false);
             messageSaving = config("Messages", "Drawing end", "Drawing map...", "Center message when saving file is started. [Not Synced with Server]", false);

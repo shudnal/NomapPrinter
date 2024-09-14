@@ -16,6 +16,7 @@ namespace NomapPrinter
         public static GameObject parentObject;
         public static GameObject mapContent;
         public static RectTransform content;
+        public static RectTransform viewport;
 
         public static Texture2D mapTexture = MapMaker.mapTexture;
         private static bool mapTextureIsReady = false;
@@ -37,25 +38,11 @@ namespace NomapPrinter
         
         private static readonly int layerUI = LayerMask.NameToLayer("UI");
 
-        private static bool CanOperateMap
-        {
-            get
-            {
-                if (mapWindow.Value == MapWindow.Hide || mapWindow.Value == MapWindow.ShowOnInteraction)
-                    return false;
+        public static int hiddenFrames;
 
-                if (DisplayingWindow)
-                    return true;
+        private static bool CanOpenMap() => mapWindow.Value != MapWindow.Hide && mapWindow.Value != MapWindow.ShowOnInteraction;
 
-                Player localPlayer = Player.m_localPlayer;
-
-                return !(localPlayer == null || localPlayer.IsDead() || localPlayer.InCutscene() || localPlayer.IsTeleporting())
-                        &&  (Chat.instance == null || !Chat.instance.HasFocus())
-                        &&  !Console.IsVisible() && !Menu.IsVisible() 
-                        && TextViewer.instance != null && !TextViewer.instance.IsVisible() 
-                        && !TextInput.IsVisible() && !Minimap.IsOpen();
-            }
-        }
+        private static bool ForceCloseMap(Player player) => player == null || player.IsDead() || player.InCutscene() || player.IsTeleporting();
 
         private static bool DisplayingWindow
         {
@@ -120,24 +107,6 @@ namespace NomapPrinter
             }
         }
 
-        public static void OnGUI()
-        {
-            if (DisplayingWindow)
-            {
-                // enable cursor if map is displaying
-                SetUnlockCursor(0, true);
-
-                if (UnityInput.Current.GetMouseButtonDown(1)) // Right click to reset zoom
-                {
-                    ZoomMap(0);
-                }
-                else if (UnityInput.Current.GetMouseButtonDown(2)) // Middle click to reset position
-                {
-                    CenterMap();
-                }
-            }
-        }
-
         public static void Start()
         {
             pluginFolder = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent;
@@ -154,29 +123,78 @@ namespace NomapPrinter
             if (!mapWindowInitialized)
                 return;
 
-            if (CanOperateMap)
+            if (ZInput.VirtualKeyboardOpen)
+                return;
+
+            Player localPlayer = Player.m_localPlayer;
+            if (ForceCloseMap(localPlayer))
             {
-                if (ZInput.GetButtonUp("Map") || ZInput.GetButtonUp("JoyMap"))
-                {
-                    if (!IsMapReady())
-                        ShowMessage(messageNotReady.Value);
-                    else
-                        DisplayingWindow = !DisplayingWindow;
-                }
+                DisplayingWindow = false;
+                return;
             }
 
-            if (DisplayingWindow && ZInput.GetKeyDown(KeyCode.Escape))
-                DisplayingWindow = false;
+            if (DisplayingWindow)
+                hiddenFrames = 0;
+            else
+                hiddenFrames++;
 
             if (DisplayingWindow)
             {
-                // enable scroll to change map scale
-                float scrollIncrement = ZInput.GetAxis("Mouse ScrollWheel");
-                if (scrollIncrement != 0)
-                {
-                    ZoomMap(scrollIncrement);
-                }
+                if (ZInput.GetKeyDown(KeyCode.Escape) 
+                 || ZInput.GetButtonDown("Map")
+                 || ZInput.GetButtonDown("JoyMap") && (!ZInput.GetButton("JoyLTrigger") || !ZInput.GetButton("JoyLBumper"))
+                 || ZInput.GetButtonDown("JoyButtonB"))
+                    DisplayingWindow = false;
             }
+            else if (CanOpenMap())
+            {
+                if (localPlayer.TakeInput() && (ZInput.GetButtonDown("Map")
+                                            || (ZInput.GetButtonDown("JoyMap") && (!ZInput.GetButton("JoyLTrigger") || !ZInput.GetButton("JoyLBumper")) && !ZInput.GetButton("JoyAltKeys"))))
+                    ShowMap();
+            }
+
+            if (DisplayingWindow)
+            {
+                if (ZInput.IsGamepadActive())
+                    UpdateGamepad(Time.deltaTime);
+
+                if (ZInput.IsMouseActive())
+                    UpdateMouse();
+            }
+        }
+
+        public static void UpdateMouse()
+        {
+            // enable cursor if map is displaying
+            SetUnlockCursor(0, true);
+
+            if (ZInput.GetMouseButton(1))//(UnityInput.Current.GetMouseButtonDown(1)) // Right click to reset zoom
+                ZoomMap(0);
+            
+            if (ZInput.GetMouseButton(2)) // (UnityInput.Current.GetMouseButtonDown(2)) // Middle click to reset position
+                CenterMap();
+            
+            // enable scroll to change map scale
+            float scrollIncrement = ZInput.GetAxis("Mouse ScrollWheel");
+            if (scrollIncrement != 0)
+                ZoomMap(scrollIncrement);
+        }
+
+        public static void UpdateGamepad(float dt)
+        {
+            if (ZInput.GetButton("JoyRStick")) // Right stick to reset zoom
+                ZoomMap(0);
+            
+            if (ZInput.GetButton("JoyLStick")) // Left click to reset position
+                CenterMap();
+
+            if (ZInput.GetButton("JoyLTrigger"))
+                ZoomMap(-mapGamepadZoomSpeed.Value * dt * 1.5f);
+
+            if (ZInput.GetButton("JoyRTrigger"))
+                ZoomMap(mapGamepadZoomSpeed.Value * dt * 1.5f);
+
+            MoveMap(-ZInput.GetJoyLeftStickX(smooth: true), ZInput.GetJoyLeftStickY(), dt);
         }
 
         public static void ShowMap()
@@ -256,30 +274,46 @@ namespace NomapPrinter
 
         private static void ZoomMap(float increment)
         {
-            float scaleIncrement = increment / 2;
-            if (scaleIncrement == 0)
-                scaleIncrement = mapDefaultScale.Value - content.localScale.x;
+            if (increment.Equals(0))
+            {
+                content.localScale = Vector3.one;
+                return;
+            }
 
+            if (ZInput.IsMouseActive() && !RectTransformUtility.RectangleContainsScreenPoint(viewport, UnityInput.Current.mousePosition))
+                return;
+
+            float scaleIncrement = increment / 2;
             float minScale = Mathf.Max(mapMinimumScale.Value, mapSize.Value == MapSize.Normal ? 0.4f: 0.25f);
             float maxScale = Mathf.Min(mapMaximumScale.Value, 2f);
 
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(content, UnityInput.Current.mousePosition, null, out Vector2 relativeMousePosition);
-
-            Vector3 _scale = new Vector3(content.localScale.x, content.localScale.y, content.localScale.z);
-
-            float scale = Mathf.Clamp(_scale.x + scaleIncrement, minScale, maxScale);
-            _scale.Set(scale, scale, 0f);
-
-            if (content.localScale.x != _scale.x)
+            float scale = Mathf.Clamp(content.localScale.x + scaleIncrement, minScale, maxScale);
+            
+            if (content.localScale.x != scale)
             {
-                content.localScale = _scale;
-                content.anchoredPosition -= (relativeMousePosition * scaleIncrement);
+                content.localScale = new Vector2(scale, scale);
+                if (ZInput.IsMouseActive())
+                {
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(content, UnityInput.Current.mousePosition, null, out Vector2 relativeMousePosition);
+                    content.localPosition -= new Vector3(relativeMousePosition.x, relativeMousePosition.y) * scaleIncrement;
+                }
+                else if (ZInput.IsGamepadActive())
+                {
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(content, new Vector2(Screen.width / 2, Screen.height / 2), null, out Vector2 relativeMousePosition);
+                    content.localPosition -= new Vector3(relativeMousePosition.x, relativeMousePosition.y) * scaleIncrement;
+                }
             }
-        }
+        } 
 
         private static void CenterMap()
         {
-            content.localPosition = Vector2.zero;
+            content.localPosition = Vector3.zero;
+            content.anchoredPosition = Vector3.zero;
+        }
+
+        private static void MoveMap(float deltaX, float deltaY, float dt)
+        {
+            content.localPosition += new Vector3(deltaX, deltaY) * dt * 1000f * mapGamepadMoveSpeed.Value;
         }
 
         private static void ResetContent()
@@ -341,7 +375,7 @@ namespace NomapPrinter
             mapViewPort.AddComponent<Image>().color = new Color(0, 0, 0, 0);
 
             // Viewport rect is on 6 pixels less then Scrollview to make borders
-            RectTransform viewport = mapViewPort.GetComponent<RectTransform>();
+            viewport = mapViewPort.GetComponent<RectTransform>();
             viewport.anchorMin = Vector2.zero;
             viewport.anchorMax = Vector2.one;
             viewport.sizeDelta = new Vector2(-12f, -12f);
@@ -547,7 +581,13 @@ namespace NomapPrinter
                 if (!Game.m_noMap)
                     return;
 
-                __result = __result || DisplayingWindow;
+                if (mapWindowInitialized)
+                {
+                    if (!DisplayingWindow)
+                        __result = hiddenFrames <= 2;
+                    else
+                        __result = true;
+                }
             }
         }
 
@@ -565,6 +605,5 @@ namespace NomapPrinter
                 return !(allowInteractiveMapOnWrite.Value && preventPinAddition.Value);
             }
         }
-
     }
 }
