@@ -1,3 +1,6 @@
+# 1.3.2
+* fixed map being auto drawn for new character using Vanilla map style and Character data storage
+
 # 1.3.1
 * custom layers synchronization optimized and refined
 

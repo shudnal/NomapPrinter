@@ -481,10 +481,16 @@ namespace NomapPrinter
 
             InitIconSize();
 
+            bool haveExploration = GetPlayerExploration(Player.m_localPlayer, worldUID);
+
             if (mapType.Value == MapType.Vanilla)
             {
-                ShowMessage(messageStart.Value);
-                yield return GetVanillaMap(2048 * (int)mapSize.Value);
+                // Vanilla map does not need pregeneration
+                if (!pregeneration)
+                {
+                    ShowMessage(messageStart.Value);
+                    yield return GetVanillaMap(2048 * (int)mapSize.Value, haveExploration);
+                }
             }
             else
             {
@@ -509,7 +515,7 @@ namespace NomapPrinter
 
                 yield return new WaitUntil(() => Player.m_localPlayer != null);
 
-                if (GetPlayerExploration(Player.m_localPlayer, worldUID))
+                if (haveExploration)
                 {
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
 
@@ -532,7 +538,7 @@ namespace NomapPrinter
                 MapGenerator.DeInitializeTextures();
             }
 
-            if (!pregeneration && saveMapToFile.Value)
+            if (!pregeneration && MapViewer.IsMapReady() && saveMapToFile.Value)
             {
                 string filename = filePath.Value;
 
@@ -664,7 +670,7 @@ namespace NomapPrinter
             return worldDataPrefix + worldUID.ToString();
         }
 
-        private static IEnumerator GetVanillaMap(int resolution)
+        private static IEnumerator GetVanillaMap(int resolution, bool haveExploration)
         {
             yield return new WaitUntil(() => Player.m_localPlayer != null && Minimap.instance != null);
 
@@ -706,13 +712,11 @@ namespace NomapPrinter
             // Store fog pixels to restore later
             Color32[] fogTex = Minimap.instance.m_fogTexture.GetPixels32();
 
-            bool HaveExploration = GetPlayerExploration(Player.m_localPlayer, worldUID);
-
             // Combine fog for shared map
             bool combineFog = !preserveSharedMapFog.Value && showSharedMap.Value;
             Color[] pixels = Minimap.instance.m_fogTexture.GetPixels();
             for (int i = 0; i < pixels.Length; i++)
-                if (HaveExploration && !exploration[i])
+                if (haveExploration && !exploration[i])
                     pixels[i] = Color.white;
                 else if (combineFog && pixels[i].g == 0f && pixels[i].r != 0f)
                     pixels[i].r = pixels[i].g;

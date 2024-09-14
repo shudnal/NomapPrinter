@@ -158,7 +158,7 @@ namespace NomapPrinter
             {
                 if (ZInput.GetButtonUp("Map") || ZInput.GetButtonUp("JoyMap"))
                 {
-                    if (!mapTextureIsReady)
+                    if (!IsMapReady())
                         ShowMessage(messageNotReady.Value);
                     else
                         DisplayingWindow = !DisplayingWindow;
@@ -181,7 +181,7 @@ namespace NomapPrinter
 
         public static void ShowMap()
         {
-            if (!mapTextureIsReady)
+            if (!IsMapReady())
                 ShowMessage(messageNotReady.Value);
             else
                 DisplayingWindow = true;
@@ -242,6 +242,8 @@ namespace NomapPrinter
             mapTextureIsReady = ready;
             ResetContent();
         }
+
+        public static bool IsMapReady() => mapTextureIsReady;
 
         private static void SetUnlockCursor(int lockState, bool cursorVisible)
         {
@@ -474,7 +476,7 @@ namespace NomapPrinter
             if (mapStorage.Value != MapStorage.LocalFolder)
                 return;
 
-            if (!mapTextureIsReady)
+            if (!IsMapReady())
                 return;
 
             string filename = LocalFileName(player);
@@ -514,7 +516,7 @@ namespace NomapPrinter
 
                 if (mapStorage.Value == MapStorage.LocalFolder && LoadMapFromLocalFile(__instance))
                     SetMapIsReady();
-                else if (mapStorage.Value != MapStorage.LoadFromSharedFile)
+                else if (mapStorage.Value == MapStorage.Character)
                     MapMaker.PregenerateMap();
             }
         }
