@@ -1,3 +1,6 @@
+# 1.3.4
+* support for custom world size using EWSize
+
 # 1.3.3
 * gamepad support
 

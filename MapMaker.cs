@@ -17,8 +17,8 @@ namespace NomapPrinter
     {
         public class WorldMapData
         {
-            public const int textureSize = 4096; // original = 2048
-            public const int pixelSize = 6; // original = 12
+            public const int _textureSize = 4096; // original = 2048
+            public const int _pixelSize = 6; // original = 12
 
             public const string cacheFileName = "worldData";
             public const int version = 1;
@@ -32,6 +32,16 @@ namespace NomapPrinter
             public Texture2D m_mapTexture;
             public Texture2D m_forestTexture;
             public Texture2D m_heightmap;
+
+            public static int textureSize
+            {
+                get => (int)(_textureSize * mapSizeMultiplier.Value);
+            }
+
+            public static int pixelSize
+            {
+                get => (int)(_pixelSize * mapSizeMultiplier.Value);
+            }
 
             public WorldMapData(long worldUID)
             {
@@ -417,7 +427,7 @@ namespace NomapPrinter
         public static bool isWorking = false;
         private static IEnumerator worker;
 
-        public static Texture2D mapTexture = new Texture2D(4096, 4096, TextureFormat.RGB24, false);
+        public static Texture2D mapTexture = new Texture2D(WorldMapData.textureSize, WorldMapData.textureSize, TextureFormat.RGB24, false);
 
         private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
 

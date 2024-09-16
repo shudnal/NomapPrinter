@@ -8,7 +8,12 @@ namespace NomapPrinter
 {
     internal static class MapGenerator
     {
-        private const int m_textureSize = 4096; // original = 2048
+        private const int _textureSize = 4096; // original = 2048
+
+        public static int m_textureSize
+        {
+            get => (int)(_textureSize * mapSizeMultiplier.Value);
+        }
 
         private static bool[] _exploredData;
         private static Color32[] _mapTexture;
@@ -187,10 +192,18 @@ namespace NomapPrinter
                         if (!exploration[row * currentSize + col])
                             continue;
 
-                        ExploredData[row * 2 * targetSize + col * 2] = true;
-                        ExploredData[row * 2 * targetSize + col * 2 + 1] = true;
-                        ExploredData[(row * 2 + 1) * targetSize + col * 2] = true;
-                        ExploredData[(row * 2 + 1) * targetSize + col * 2 + 1] = true;
+                        SetExploredData(row * 2 * targetSize + col * 2);
+                        SetExploredData(row * 2 * targetSize + col * 2 + 1);
+                        SetExploredData((row * 2 + 1) * targetSize + col * 2);
+                        SetExploredData((row * 2 + 1) * targetSize + col * 2 + 1);
+
+                        void SetExploredData(int position)
+                        {
+                            if (position >= ExploredData.Length)
+                                return;
+
+                            ExploredData[position] = true;
+                        }
                     }
                 }
             }
