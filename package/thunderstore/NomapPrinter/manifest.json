@@ -1,6 +1,6 @@
 {
     "name": "NomapPrinter",
-    "version_number": "1.3.4",
+    "version_number": "1.3.5",
     "website_url": "https://github.com/shudnal/NomapPrinter",
     "description": "In nomap mode reading a Cartography Table will generate a simplified map to be shown like the interactive map in normal mode. Gamepad support. Custom map, fog texture, under and over fog custom layers support.",
     "dependencies": [ "denikson-BepInExPack_Valheim-5.4.2202" ]

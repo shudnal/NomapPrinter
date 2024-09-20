@@ -1,3 +1,6 @@
+# 1.3.5
+* fixed interactive map usage
+
 # 1.3.4
 * support for custom world size using EWSize
 

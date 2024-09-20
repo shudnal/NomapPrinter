@@ -581,7 +581,7 @@ namespace NomapPrinter
                 if (!Game.m_noMap)
                     return;
 
-                if (mapWindowInitialized)
+                if (!__result && mapWindowInitialized)
                 {
                     if (!DisplayingWindow)
                         __result = hiddenFrames <= 2;
