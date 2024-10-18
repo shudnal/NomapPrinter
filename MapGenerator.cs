@@ -10,7 +10,7 @@ namespace NomapPrinter
     {
         private const int _textureSize = 4096; // original = 2048
 
-        public static int m_textureSize
+        public static int TextureSize
         {
             get => (int)(_textureSize * mapSizeMultiplier.Value);
         }
@@ -25,8 +25,7 @@ namespace NomapPrinter
         {
             get
             {
-                if (_mapTexture == null)
-                    _mapTexture = new Color32[m_textureSize * m_textureSize];
+                _mapTexture ??= new Color32[TextureSize * TextureSize];
 
                 return _mapTexture;
             }
@@ -38,8 +37,7 @@ namespace NomapPrinter
         {
             get
             {
-                if (_forestTexture == null)
-                    _forestTexture = new Color[m_textureSize * m_textureSize];
+                _forestTexture ??= new Color[TextureSize * TextureSize];
 
                 return _forestTexture;
             }
@@ -51,8 +49,7 @@ namespace NomapPrinter
         {
             get
             {
-                if (_heightmap == null)
-                    _heightmap = new Color32[m_textureSize * m_textureSize];
+                _heightmap ??= new Color32[TextureSize * TextureSize];
 
                 return _heightmap;
             }
@@ -64,8 +61,7 @@ namespace NomapPrinter
         {
             get
             {
-                if (_exploredData == null)
-                    _exploredData = new bool[m_textureSize * m_textureSize];
+                _exploredData ??= new bool[TextureSize * TextureSize];
 
                 return _exploredData;
             }
@@ -83,8 +79,7 @@ namespace NomapPrinter
         {
             get
             {
-                if (_result == null)
-                    _result = new Color32[m_textureSize * m_textureSize];
+                _result ??= new Color32[TextureSize * TextureSize];
 
                 return _result;
             }
@@ -197,7 +192,7 @@ namespace NomapPrinter
                         SetExploredData((row * 2 + 1) * targetSize + col * 2);
                         SetExploredData((row * 2 + 1) * targetSize + col * 2 + 1);
 
-                        void SetExploredData(int position)
+                        static void SetExploredData(int position)
                         {
                             if (position >= ExploredData.Length)
                                 return;
@@ -387,11 +382,11 @@ namespace NomapPrinter
 
         private static IEnumerator LerpTextures(Color32[] array1, Color32[] array2)
         {
-            Color32[] output = new Color32[m_textureSize * m_textureSize];
+            Color32[] output = new Color32[TextureSize * TextureSize];
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < (m_textureSize * m_textureSize); i++)
+                for (int i = 0; i < (TextureSize * TextureSize); i++)
                 {
                     int a = array2[i].a - array1[i].a;
 
@@ -417,11 +412,11 @@ namespace NomapPrinter
 
         private static IEnumerator DarkenTextureLinear(Color32[] array, byte d)
         {
-            Color32[] output = new Color32[m_textureSize * m_textureSize];
+            Color32[] output = new Color32[TextureSize * TextureSize];
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < m_textureSize * m_textureSize; i++)
+                for (int i = 0; i < TextureSize * TextureSize; i++)
                 {
                     int bit;
                     bit = (array[i].r - d);
@@ -467,12 +462,12 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < m_textureSize; i++)
+                for (int i = 0; i < TextureSize; i++)
                 {
-                    for (int j = 0; j < m_textureSize; j++)
+                    for (int j = 0; j < TextureSize; j++)
                     {
-                        int pos = i * m_textureSize + j;
-                        int pixel = i > 0 ? input[pos].r - input[(i - 1) * m_textureSize + j].r : 0;
+                        int pos = i * TextureSize + j;
+                        int pixel = i > 0 ? input[pos].r - input[(i - 1) * TextureSize + j].r : 0;
 
                         pixel *= 8;
                         byte abs = (byte)Math.Abs(pixel);
@@ -499,25 +494,25 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                bool[] shaded = new bool[m_textureSize * m_textureSize];
+                bool[] shaded = new bool[TextureSize * TextureSize];
 
-                for (int i = 0; i < m_textureSize * m_textureSize; i++)
+                for (int i = 0; i < TextureSize * TextureSize; i++)
                     shaded[i] = false;
 
-                for (int i = 0; i < m_textureSize; i++)
+                for (int i = 0; i < TextureSize; i++)
                 {
-                    for (int j = 0; j < m_textureSize; j++)
+                    for (int j = 0; j < TextureSize; j++)
                     {
-                        int pos = i * m_textureSize + j;
+                        int pos = i * TextureSize + j;
                         if (shaded[pos] == false)
                         {
                             output[pos] = new Color32(255, 255, 255, 0);
                             int q = 1;
-                            while ((i + q) < m_textureSize)
+                            while ((i + q) < TextureSize)
                             {
-                                if (input[pos].r > (input[(i + q) * m_textureSize + j].r + (q * 2)))    //2/1 sun angle (the +q part at the end)
+                                if (input[pos].r > (input[(i + q) * TextureSize + j].r + (q * 2)))    //2/1 sun angle (the +q part at the end)
                                 {
-                                    shaded[(i + q) * m_textureSize + j] = true;
+                                    shaded[(i + q) * TextureSize + j] = true;
                                 }
                                 else break;
                                 q++;
@@ -542,7 +537,7 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < m_textureSize * m_textureSize; i++)
+                for (int i = 0; i < TextureSize * TextureSize; i++)
                 {
                     if (input[i].b == 0)
                     {
@@ -550,8 +545,8 @@ namespace NomapPrinter
                         continue;
                     }
 
-                    int correction = ((i / m_textureSize) / (8 * 2)) - 128;           //correction goes from -128 to 127
-                    int correction2 = ((i % m_textureSize) / (8 * 2)) - 128;       //correction2 goes from -128 to 127
+                    int correction = ((i / TextureSize) / (8 * 2)) - 128;           //correction goes from -128 to 127
+                    int correction2 = ((i % TextureSize) / (8 * 2)) - 128;       //correction2 goes from -128 to 127
                     int correction3 = ((correction * correction) / 128) + ((correction2 * correction2) / 512);
 
                     if (correction < 0)
@@ -591,13 +586,13 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                for (int x = 0; x < m_textureSize; x++)
+                for (int x = 0; x < TextureSize; x++)
                 {
-                    for (int y = 0; y < m_textureSize; y++)
+                    for (int y = 0; y < TextureSize; y++)
                     {
                         float sample = Mathf.PerlinNoise(((float)x) / tightness, ((float)y) / tightness);
                         sample = ((sample - 0.5f) / damping) + 0.5f;
-                        Result[x * m_textureSize + y] = new Color(sample, sample, sample, 0.2f);
+                        Result[x * TextureSize + y] = new Color(sample, sample, sample, 0.2f);
                     }
                 }
             });
@@ -616,16 +611,16 @@ namespace NomapPrinter
             {
                 yield return GetPerlin(128, 16);
                 fog = Result;
-                fogRes = m_textureSize;
+                fogRes = TextureSize;
             }
 
             var internalThread = new Thread(() =>
             {
-                for (int x = 0; x < m_textureSize; x++)
+                for (int x = 0; x < TextureSize; x++)
                 {
-                    for (int y = 0; y < m_textureSize; y++)
+                    for (int y = 0; y < TextureSize; y++)
                     {
-                        int pos = x * m_textureSize + y;
+                        int pos = x * TextureSize + y;
 
                         if (!ExploredData[pos])
                         {
@@ -656,16 +651,16 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < (m_textureSize * m_textureSize); i++)    //Shift height values up by graduation so that coast is outlined with a contour line
+                for (int i = 0; i < (TextureSize * TextureSize); i++)    //Shift height values up by graduation so that coast is outlined with a contour line
                 {
                     int newR = (start[i].b > 0) ? 0 : Math.Min(start[i].r + graduations, 255);
                     input[i].r = (byte)newR;
                 }
 
-                for (int y = 1; y < (m_textureSize - 1); y++)
+                for (int y = 1; y < (TextureSize - 1); y++)
                 {
-                    int yCoord = y * m_textureSize;
-                    for (int x = 1; x < (m_textureSize - 1); x++)
+                    int yCoord = y * TextureSize;
+                    for (int x = 1; x < (TextureSize - 1); x++)
                     {
                         int testCoord = yCoord + x;    //Flattened 2D coords of pixel under test
                         int heightRef = input[yCoord + x].r / graduations;      //Which graduation does the height under test fall under?
@@ -673,7 +668,7 @@ namespace NomapPrinter
 
                         for (int i = -1; i < 2; i++)
                         {
-                            int iCoord = i * m_textureSize;
+                            int iCoord = i * TextureSize;
                             for (int j = -1; j < 2; j++)
                             {
 
@@ -717,11 +712,11 @@ namespace NomapPrinter
         {
             var internalThread = new Thread(() =>
             {
-                for (int x = 0; x < m_textureSize; x++)
+                for (int x = 0; x < TextureSize; x++)
                 {
-                    for (int y = 0; y < m_textureSize; y++)
+                    for (int y = 0; y < TextureSize; y++)
                     {
-                        int pos = x * m_textureSize + y;
+                        int pos = x * TextureSize + y;
 
                         Color start = input[pos];
                         float sample = Mathf.PerlinNoise(((float)x) / tightness, ((float)y) / tightness);
@@ -740,7 +735,7 @@ namespace NomapPrinter
 
         private static IEnumerator GetSolidColour(Color32 TexColour)
         {
-            Color32[] array = new Color32[m_textureSize * m_textureSize];
+            Color32[] array = new Color32[TextureSize * TextureSize];
 
             var internalThread = new Thread(() =>
             {
@@ -785,11 +780,11 @@ namespace NomapPrinter
 
             var internalThread = new Thread(() =>
             {
-                for (int x = 0; x < m_textureSize; x++)
+                for (int x = 0; x < TextureSize; x++)
                 {
-                    for (int y = 0; y < m_textureSize; y++)
+                    for (int y = 0; y < TextureSize; y++)
                     {
-                        int pos = x * m_textureSize + y;
+                        int pos = x * TextureSize + y;
 
                         if ((input[pos].r == from.r) && (input[pos].g == from.g) && (input[pos].b == from.b))
                             output[pos] = space[x % spaceRes * spaceRes + y % spaceRes];
@@ -809,11 +804,11 @@ namespace NomapPrinter
 
         private static IEnumerator ApplyForestMaskTexture(Color32[] array, Color[] forestMask, float forestColorFactor = 0.9f)
         {
-            Color32[] output = new Color32[m_textureSize * m_textureSize];
+            Color32[] output = new Color32[TextureSize * TextureSize];
 
             var internalThread = new Thread(() =>
             {
-                for (int i = 0; i < m_textureSize * m_textureSize; i++)
+                for (int i = 0; i < TextureSize * TextureSize; i++)
                 {
                     if (forestMask[i] == clearMask)
                     {
@@ -834,8 +829,8 @@ namespace NomapPrinter
                         // Mistlands mist
                         if (forestMask[i].g > 0f)
                         {
-                            float wy = ((float)(i / m_textureSize) / m_textureSize - 0.5f) * 400f;
-                            float wx = ((float)(i % m_textureSize) / m_textureSize - 0.5f) * 400f;
+                            float wy = ((float)(i / TextureSize) / TextureSize - 0.5f) * 400f;
+                            float wx = ((float)(i % TextureSize) / TextureSize - 0.5f) * 400f;
                             output[i] = Color32.Lerp(array[i], mistColor, forestMask[i].g * GetMistlandsNoise(wx, wy) * 0.9f);
                         }
 

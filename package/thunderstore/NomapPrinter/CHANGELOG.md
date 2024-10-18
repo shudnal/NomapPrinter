@@ -1,3 +1,6 @@
+# 1.3.6
+* exploration data potential fix
+
 # 1.3.5
 * fixed interactive map usage
 

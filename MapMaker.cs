@@ -33,12 +33,12 @@ namespace NomapPrinter
             public Texture2D m_forestTexture;
             public Texture2D m_heightmap;
 
-            public static int textureSize
+            public static int TextureSize
             {
                 get => (int)(_textureSize * mapSizeMultiplier.Value);
             }
 
-            public static int pixelSize
+            public static int PixelSize
             {
                 get => (int)(_pixelSize * mapSizeMultiplier.Value);
             }
@@ -65,9 +65,9 @@ namespace NomapPrinter
 
                 yield return new WaitUntil(() => WorldGenerator.instance != null && ZoneSystem.instance != null);
 
-                Color32[] m_mapTextureArray = new Color32[textureSize * textureSize];
-                Color[] m_forestTextureArray = new Color[textureSize * textureSize];
-                Color32[] m_heightmapArray = new Color32[textureSize * textureSize];
+                Color32[] m_mapTextureArray = new Color32[TextureSize * TextureSize];
+                Color[] m_forestTextureArray = new Color[TextureSize * TextureSize];
+                Color32[] m_heightmapArray = new Color32[TextureSize * TextureSize];
 
                 if (!initialized && threads == null)
                 {
@@ -84,19 +84,19 @@ namespace NomapPrinter
 
                 yield return new WaitWhile(() => threads != null && threads.Any(thread => thread.IsAlive));
 
-                m_mapTexture = new Texture2D(textureSize, textureSize, TextureFormat.RGB24, mipChain: false)
+                m_mapTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGB24, mipChain: false)
                 {
                     name = "NomapPrinter_m_mapTexture",
                     wrapMode = TextureWrapMode.Clamp
                 };
 
-                m_forestTexture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, mipChain: false)
+                m_forestTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, mipChain: false)
                 {
                     name = "NomapPrinter_m_forestTexture",
                     wrapMode = TextureWrapMode.Clamp
                 };
 
-                m_heightmap = new Texture2D(textureSize, textureSize, TextureFormat.RGB24, mipChain: false)
+                m_heightmap = new Texture2D(TextureSize, TextureSize, TextureFormat.RGB24, mipChain: false)
                 {
                     name = "NomapPrinter_m_heightmap",
                     wrapMode = TextureWrapMode.Clamp
@@ -126,17 +126,17 @@ namespace NomapPrinter
 
             private void FillMapPart(int partX, int partY, Color32[] mapTextureArray, Color[] forestTextureArray, Color32[] heightmapArray)
             {
-                for (int i = partX * textureSize / 2; i < (partX + 1) * textureSize / 2; i++)
-                    for (int j = partY * textureSize / 2; j < (partY + 1) * textureSize / 2; j++)
+                for (int i = partX * TextureSize / 2; i < (partX + 1) * TextureSize / 2; i++)
+                    for (int j = partY * TextureSize / 2; j < (partY + 1) * TextureSize / 2; j++)
                         FillMap(i, j, mapTextureArray, forestTextureArray, heightmapArray);
             }
 
             private void FillMap(int i, int j, Color32[] mapTextureArray, Color[] forestTextureArray, Color32[] heightmapArray)
             {
-                float wy = (i - textureSize / 2) * pixelSize + pixelSize / 2f;
-                float wx = (j - textureSize / 2) * pixelSize + pixelSize / 2f;
+                float wy = (i - TextureSize / 2) * PixelSize + PixelSize / 2f;
+                float wx = (j - TextureSize / 2) * PixelSize + PixelSize / 2f;
 
-                int pos = i * textureSize + j;
+                int pos = i * TextureSize + j;
 
                 if (DUtils.Length(wx, wy) > worldSize.Value)
                 {
@@ -201,10 +201,10 @@ namespace NomapPrinter
                 try
                 {
                     worldUID = zPackage.ReadLong();
-                    if (textureSize != zPackage.ReadInt())
+                    if (TextureSize != zPackage.ReadInt())
                         return false;
 
-                    if (pixelSize != zPackage.ReadInt())
+                    if (PixelSize != zPackage.ReadInt())
                         return false;
 
                     if (m_mapTexture == null)
@@ -238,8 +238,8 @@ namespace NomapPrinter
                 zPackage.Write(version);
 
                 zPackage.Write(worldUID);
-                zPackage.Write(textureSize);
-                zPackage.Write(pixelSize);
+                zPackage.Write(TextureSize);
+                zPackage.Write(PixelSize);
 
                 zPackage.Write(m_mapTexture.EncodeToPNG());
                 zPackage.Write(m_forestTexture.EncodeToPNG());
@@ -289,14 +289,6 @@ namespace NomapPrinter
             private string ExploredMapFileName()
             {
                 return Path.Combine(CacheDirectory(), $"{exploredMapFileName}_{exploredMapType}");
-            }
-
-            private string[] ExploredMapFileNames(bool packed)
-            {
-                return new string[2] {
-                    Path.Combine(configDirectory, $"{exploredMapType}.{worldUID}.explored.{(packed ? "zpack" : "png")}"),
-                    Path.Combine(configDirectory, $"{exploredMapType}.{ZNet.instance.GetWorldName()}.explored.{(packed ? "zpack" : "png")}"),
-                };
             }
 
             private bool LoadFromCustomFile()
@@ -427,7 +419,7 @@ namespace NomapPrinter
         public static bool isWorking = false;
         private static IEnumerator worker;
 
-        public static Texture2D mapTexture = new Texture2D(WorldMapData.textureSize, WorldMapData.textureSize, TextureFormat.RGB24, false);
+        public static Texture2D mapTexture = new Texture2D(WorldMapData.TextureSize, WorldMapData.TextureSize, TextureFormat.RGB24, false);
 
         private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
 
@@ -463,8 +455,6 @@ namespace NomapPrinter
             }
 
             worldUID = ZNet.instance.GetWorldUID();
-
-            SavePlayerExploration(Player.m_localPlayer, worldUID);
 
             worker = CreateMap();
 
@@ -647,11 +637,11 @@ namespace NomapPrinter
             return true;
         }
 
-        private static void SavePlayerExploration(Player player, long worldUID)
+        public static void SavePlayerExploration()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            exploration = Minimap.instance.m_explored;
+            exploration = Minimap.instance.m_explored.ToArray();
 
             if (showSharedMap.Value)
                 for (int i = 0; i < exploration.Length; i++)
@@ -662,16 +652,16 @@ namespace NomapPrinter
             byte[] bytes = new byte[(ba.Length - 1) / 8 + 1];
             ba.CopyTo(bytes, 0);
 
-            SaveValue(WorldDataName(worldUID), Convert.ToBase64String(Utils.Compress(bytes)));
+            SaveValue(WorldDataName(ZNet.instance.GetWorldUID()), Convert.ToBase64String(Utils.Compress(bytes)));
 
             LogInfo($"Exploration saved in {stopwatch.ElapsedMilliseconds,-4:F2} ms");
 
-            void SaveValue(string key, string value)
+            static void SaveValue(string key, string value)
             {
-                if (player.m_customData.ContainsKey(key))
-                    player.m_customData[key] = value;
+                if (Player.m_localPlayer.m_customData.ContainsKey(key))
+                    Player.m_localPlayer.m_customData[key] = value;
                 else
-                    player.m_customData.Add(key, value);
+                    Player.m_localPlayer.m_customData.Add(key, value);
             }
         }
 
@@ -1093,29 +1083,19 @@ namespace NomapPrinter
             if (height < abyss_depth)
                 return Color.black;
 
-            switch (biome)
+            return biome switch
             {
-                case Heightmap.Biome.Meadows:
-                    return new Color(0.573f, 0.655f, 0.361f);
-                case Heightmap.Biome.AshLands:
-                    return new Color(0.48f, 0.125f, 0.125f);
-                case Heightmap.Biome.BlackForest:
-                    return new Color(0.42f, 0.455f, 0.247f);
-                case Heightmap.Biome.DeepNorth:
-                    return new Color(0.85f, 0.85f, 1f);  // Blueish color
-                case Heightmap.Biome.Plains:
-                    return new Color(0.906f, 0.671f, 0.47f);
-                case Heightmap.Biome.Swamp:
-                    return new Color(0.639f, 0.447f, 0.345f);
-                case Heightmap.Biome.Mountain:
-                    return Color.white;
-                case Heightmap.Biome.Mistlands:
-                    return new Color(0.3f, 0.2f, 0.3f);
-                case Heightmap.Biome.Ocean:
-                    return Color.blue;
-                default:
-                    return Minimap.instance.GetPixelColor(biome);
-            }
+                Heightmap.Biome.Meadows => new Color(0.573f, 0.655f, 0.361f),
+                Heightmap.Biome.AshLands => new Color(0.48f, 0.125f, 0.125f),
+                Heightmap.Biome.BlackForest => new Color(0.42f, 0.455f, 0.247f),
+                Heightmap.Biome.DeepNorth => new Color(0.85f, 0.85f, 1f),// Blueish color
+                Heightmap.Biome.Plains => new Color(0.906f, 0.671f, 0.47f),
+                Heightmap.Biome.Swamp => new Color(0.639f, 0.447f, 0.345f),
+                Heightmap.Biome.Mountain => Color.white,
+                Heightmap.Biome.Mistlands => new Color(0.3f, 0.2f, 0.3f),
+                Heightmap.Biome.Ocean => Color.blue,
+                _ => Minimap.instance.GetPixelColor(biome),
+            };
         }
 
         private static Color GetMaskColor(float wx, float wy, float height, Heightmap.Biome biome)
@@ -1272,70 +1252,43 @@ namespace NomapPrinter
             if (showEveryPin.Value)
                 return true;
 
-            switch (pinIcon)
+            return pinIcon switch
             {
-                case "mapicon_boss_colored":
-                    return showPinBoss.Value;
-                case "mapicon_fire":
-                    return showPinFire.Value;
-                case "mapicon_hammer":
-                    return showPinHammer.Value;
-                case "mapicon_hildir":
-                    return showPinHildir.Value;
-                case "mapicon_hildir1":
-                    return showPinHildirQuest.Value;
-                case "mapicon_hildir2":
-                    return showPinHildirQuest.Value;
-                case "mapicon_hildir3":
-                    return showPinHildirQuest.Value;
-                case "mapicon_house":
-                    return showPinHouse.Value;
-                case "mapicon_pin":
-                    return showPinPin.Value;
-                case "mapicon_portal":
-                    return showPinPortal.Value;
-                case "mapicon_start":
-                    return showPinStart.Value;
-                case "mapicon_trader":
-                    return showPinTrader.Value;
-                case "mapicon_bed":
-                    return showPinBed.Value;
-                case "mapicon_death":
-                    return showPinDeath.Value;
-                case "mapicon_eventarea":
-                    return showPinEpicLoot.Value;
-                case "MapIconBounty":
-                    return showPinEpicLoot.Value;
-                case "TreasureMapIcon":
-                    return showPinEpicLoot.Value;
-            }
-
-            return false;
+                "mapicon_boss_colored" => showPinBoss.Value,
+                "mapicon_fire" => showPinFire.Value,
+                "mapicon_hammer" => showPinHammer.Value,
+                "mapicon_hildir" => showPinHildir.Value,
+                "mapicon_hildir1" => showPinHildirQuest.Value,
+                "mapicon_hildir2" => showPinHildirQuest.Value,
+                "mapicon_hildir3" => showPinHildirQuest.Value,
+                "mapicon_house" => showPinHouse.Value,
+                "mapicon_pin" => showPinPin.Value,
+                "mapicon_portal" => showPinPortal.Value,
+                "mapicon_start" => showPinStart.Value,
+                "mapicon_trader" => showPinTrader.Value,
+                "mapicon_bed" => showPinBed.Value,
+                "mapicon_death" => showPinDeath.Value,
+                "mapicon_eventarea" => showPinEpicLoot.Value,
+                "MapIconBounty" => showPinEpicLoot.Value,
+                "TreasureMapIcon" => showPinEpicLoot.Value,
+                _ => false,
+            };
         }
 
         private static bool IsMerchantPin(string pinIcon)
         {
-            switch (pinIcon)
+            return pinIcon switch
             {
-                case "mapicon_hildir":
-                    return true;
-                case "mapicon_hildir1":
-                    return true;
-                case "mapicon_hildir2":
-                    return true;
-                case "mapicon_hildir3":
-                    return true;
-                case "mapicon_trader":
-                    return true;
-                case "MapIconBounty":
-                    return showPinEpicLoot.Value;
-                case "TreasureMapIcon":
-                    return showPinEpicLoot.Value;
-                case "mapicon_eventarea":
-                    return showPinEpicLoot.Value;
-            }
-
-            return false;
+                "mapicon_hildir" => true,
+                "mapicon_hildir1" => true,
+                "mapicon_hildir2" => true,
+                "mapicon_hildir3" => true,
+                "mapicon_trader" => true,
+                "MapIconBounty" => showPinEpicLoot.Value,
+                "TreasureMapIcon" => showPinEpicLoot.Value,
+                "mapicon_eventarea" => showPinEpicLoot.Value,
+                _ => false,
+            };
         }
 
         private static bool IsShowablePinIcon(Minimap.PinData pin)

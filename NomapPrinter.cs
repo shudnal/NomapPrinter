@@ -14,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.5";
+        public const string pluginVersion = "1.3.6";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -286,7 +286,7 @@ namespace NomapPrinter
             {
                 if (args.Length >= 2)
                 {
-                    string filename = args.FullLine.Substring(args[0].Length + 1).Trim();
+                    string filename = args.FullLine[(args[0].Length + 1)..].Trim();
                     if (Path.GetDirectoryName(filename).IsNullOrWhiteSpace())
                         filename = Path.Combine(configDirectory, filename);
 
@@ -421,6 +421,8 @@ namespace NomapPrinter
                 if (!PrivateArea.CheckAccess(__instance.transform.position))
                     return;
 
+                MapMaker.SavePlayerExploration();
+
                 if (mapWindow.Value == MapWindow.ShowOnInteraction)
                     MapViewer.ShowMap();
                 else if (tablePartsSwap.Value)
@@ -452,6 +454,8 @@ namespace NomapPrinter
 
                 if (!PrivateArea.CheckAccess(__instance.transform.position))
                     return;
+
+                MapMaker.SavePlayerExploration();
 
                 if ((tablePartsSwap.Value || mapWindow.Value == MapWindow.ShowOnInteraction) && mapStorage.Value != MapStorage.LoadFromSharedFile)
                     MapMaker.GenerateMap();
