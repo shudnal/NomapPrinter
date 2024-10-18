@@ -1,3 +1,6 @@
+# 1.3.7
+* bog witch adaptation
+
 # 1.3.6
 * exploration data potential fix
 
