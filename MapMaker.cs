@@ -1271,6 +1271,7 @@ namespace NomapPrinter
                 "mapicon_eventarea" => showPinEpicLoot.Value,
                 "MapIconBounty" => showPinEpicLoot.Value,
                 "TreasureMapIcon" => showPinEpicLoot.Value,
+                "mapicon_bogwitch_camp" => showPinBogWitch.Value,
                 _ => false,
             };
         }
@@ -1284,6 +1285,7 @@ namespace NomapPrinter
                 "mapicon_hildir2" => true,
                 "mapicon_hildir3" => true,
                 "mapicon_trader" => true,
+                "mapicon_bogwitch_camp" => true,
                 "MapIconBounty" => showPinEpicLoot.Value,
                 "TreasureMapIcon" => showPinEpicLoot.Value,
                 "mapicon_eventarea" => showPinEpicLoot.Value,

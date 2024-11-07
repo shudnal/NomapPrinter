@@ -1,3 +1,6 @@
+# 1.3.8
+* bog witch map pin
+
 # 1.3.7
 * bog witch adaptation
 

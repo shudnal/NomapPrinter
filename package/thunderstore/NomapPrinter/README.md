@@ -27,7 +27,7 @@ Map content will be automatically updated on file change.
 
 ## Pins default config
 * pins only shows in explored part of the map
-* Haldor and Hildir pins are always shown (especially handy for Hildir's quest pins)
+* traders' pins are always shown (especially handy for Hildir's quest pins)
 * only show your own pins (no shared pins)
 * pins that checked (red crossed) are not shown
 * Bed and death pins are not shown

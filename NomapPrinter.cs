@@ -14,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.7";
+        public const string pluginVersion = "1.3.8";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -74,6 +74,7 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showPinTrader;
         public static ConfigEntry<bool> showPinHildir;
         public static ConfigEntry<bool> showPinHildirQuest;
+        public static ConfigEntry<bool> showPinBogWitch;
         public static ConfigEntry<bool> showPinBoss;
         public static ConfigEntry<bool> showPinFire;
         public static ConfigEntry<bool> showPinHouse;
@@ -260,6 +261,7 @@ namespace NomapPrinter
             showPinTrader = config("Pins list", "Show Haldor pins", true, "Show Haldor pin on drawed map");
             showPinHildir = config("Pins list", "Show Hildir pins", true, "Show Hildir pin on drawed map");
             showPinHildirQuest = config("Pins list", "Show Hildir quest pins", true, "Show Hildir quest pins on drawed map");
+            showPinBogWitch = config("Pins list", "Show Bog Witch pins", true, "Show Bog Witch pin on drawed map");
             showPinBoss = config("Pins list", "Show Boss pins", true, "Show Boss pins on drawed map");
             showPinFire = config("Pins list", "Show Fire pins", true, "Show Fire pins on drawed map");
             showPinHouse = config("Pins list", "Show House pins", true, "Show House pins on drawed map");
