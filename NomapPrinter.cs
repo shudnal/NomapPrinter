@@ -14,7 +14,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.8";
+        public const string pluginVersion = "1.3.9";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -189,19 +189,19 @@ namespace NomapPrinter
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
             preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
 
-            useCustomExploredLayer = config("Map custom layers", "Explored map - Enable layer", true, "Use custom explored map layer if it was found in config folder or shared from server");
+            useCustomExploredLayer = config("Map custom layers", "Explored map - Enable layer", false, "Use custom explored map layer if it was found in config folder or shared from server");
             syncExploredLayerFromServer = config("Map custom layers", "Explored map - Share from server", false, "Share explored map layer from server to clients. " +
                                                                                                                                      "\nFile with size more than 7MB will most likely not be loaded with default data rate of 150KB/s." +
                                                                                                                                      "\nSafest way is to share explored world as packed file and place it into mod config folder on the clients");
 
-            useCustomUnderFogLayer = config("Map custom layers", "Under fog - Enable layer", true, "Use custom under fog map layer if it was found in config folder or shared from server");
-            syncUnderFogLayerFromServer = config("Map custom layers", "Under fog - Share from server", true, "Enable server to clients sharing of layer data");
+            useCustomUnderFogLayer = config("Map custom layers", "Under fog - Enable layer", false, "Use custom under fog map layer if it was found in config folder or shared from server");
+            syncUnderFogLayerFromServer = config("Map custom layers", "Under fog - Share from server", false, "Enable server to clients sharing of layer data");
             
-            useCustomOverFogLayer = config("Map custom layers", "Over fog - Enable layer", true, "Use custom over fog map layer if it was found in config folder or shared from server");
-            syncOverFogLayerFromServer = config("Map custom layers", "Over fog - Share from server", true, "Enable server to clients sharing of layer data");
+            useCustomOverFogLayer = config("Map custom layers", "Over fog - Enable layer", false, "Use custom over fog map layer if it was found in config folder or shared from server");
+            syncOverFogLayerFromServer = config("Map custom layers", "Over fog - Share from server", false, "Enable server to clients sharing of layer data");
 
-            useCustomFogLayer = config("Map custom layers", "Fog texture - Enable layer", true, "Use custom fog texture if it was found in config folder or shared from server");
-            syncFogLayerFromServer = config("Map custom layers", "Fog texture - Share from server", true, "Enable server to clients sharing of fog texture");
+            useCustomFogLayer = config("Map custom layers", "Fog texture - Enable layer", false, "Use custom fog texture if it was found in config folder or shared from server");
+            syncFogLayerFromServer = config("Map custom layers", "Fog texture - Share from server", false, "Enable server to clients sharing of fog texture");
 
             useCustomExploredLayer.SettingChanged += (sender, args) => ReadTextureFiles();
             useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadTextureFiles();
@@ -215,7 +215,7 @@ namespace NomapPrinter
             useCustomExploredLayer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
             syncExploredLayerFromServer.SettingChanged += (sender, args) => MapMaker.ResetExploredMap();
 
-            showNearTheTableDistance = config("Map restrictions", "Show map near the table when distance is less than", defaultValue: 10f, "Distance to nearest map table for map to be shown");
+            showNearTheTableDistance = config("Map restrictions", "Show map near the table when distance is less than", defaultValue: 10f, "Distance to nearest map table for map to be shown (only for \"Show Near The Table\" map mode)");
             showMapBasePiecesRequirement = config("Map restrictions", "Show map when base pieces near the player is more than", defaultValue: 0, "Count of base pieces surrounding the player should be more than that for map to be shown");
             showMapComfortRequirement = config("Map restrictions", "Show map when player comfort is more than", defaultValue: 0, "Player comfort buff should be more than that for map to be shown");
 

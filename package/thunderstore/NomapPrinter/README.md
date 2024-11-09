@@ -145,7 +145,7 @@ To get full explored map you should
 
 ## Best mods to use with
 * To place pins immersively in nomap mode you can use [AutoPinSigns](https://valheim.thunderstore.io/package/shudnal/AutoPinSigns/)
-* To see pins without map you can use [Compass](https://www.nexusmods.com/valheim/mods/851)
+* To see pins without map you can use [Compass](https://thunderstore.io/c/valheim/p/shudnal/Compass/)
 
 ## Compatibility:
 * This mod interacts with very little of the game code, conflicts with other mods are pretty unlikely

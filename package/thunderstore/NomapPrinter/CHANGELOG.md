@@ -1,3 +1,6 @@
+# 1.3.9
+* comfort and base pieces limitations now works in every mode if set
+
 # 1.3.8
 * bog witch map pin
 
