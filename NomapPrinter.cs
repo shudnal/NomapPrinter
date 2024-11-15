@@ -222,7 +222,7 @@ namespace NomapPrinter
             saveMapToFile = config("Map save", "Save to file", false, "Save generated map to file. Works in normal map mode. You can set exact file name or folder name [Not Synced with Server]", false);
             filePath = config("Map save", "Save to file path", "", "File path used to save generated map. [Not Synced with Server]", false);
 
-            mapStorage = config("Map storage", "Data storage", MapStorage.Character, "Type of storage for map data. Default is save map data to character file.");
+            mapStorage = config("Map storage", "Data storage", MapStorage.LocalFolder, "Type of storage for map data. Default is save map data to local folder.");
             localFolder = config("Map storage", "Local folder", "", "Save and load map data from local folder. If relative path is set then the folder will be created at ...\\AppData\\LocalLow\\IronGate\\Valheim");
             sharedFile = config("Map storage", "Shared file", "", "Load map from the file name instead of generating one. File should be available on the server.");
 
