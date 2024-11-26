@@ -1268,7 +1268,7 @@ namespace NomapPrinter
                 "mapicon_trader" => showPinTrader.Value,
                 "mapicon_bed" => showPinBed.Value,
                 "mapicon_death" => showPinDeath.Value,
-                "mapicon_eventarea" => showPinEpicLoot.Value,
+                "mapicon_eventarea" => showPinEpicLoot.Value && epicLootIsLoaded,
                 "MapIconBounty" => showPinEpicLoot.Value,
                 "TreasureMapIcon" => showPinEpicLoot.Value,
                 "mapicon_bogwitch_camp" => showPinBogWitch.Value,
@@ -1288,7 +1288,7 @@ namespace NomapPrinter
                 "mapicon_bogwitch_camp" => true,
                 "MapIconBounty" => showPinEpicLoot.Value,
                 "TreasureMapIcon" => showPinEpicLoot.Value,
-                "mapicon_eventarea" => showPinEpicLoot.Value,
+                "mapicon_eventarea" => showPinEpicLoot.Value && epicLootIsLoaded,
                 _ => false,
             };
         }

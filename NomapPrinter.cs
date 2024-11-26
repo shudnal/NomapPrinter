@@ -6,9 +6,11 @@ using System;
 using System.Linq;
 using System.IO;
 using static Terminal;
+using BepInEx.Bootstrap;
 
 namespace NomapPrinter
 {
+    [BepInDependency(epicLootGUID, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
     public class NomapPrinter : BaseUnityPlugin
     {
@@ -108,6 +110,9 @@ namespace NomapPrinter
         public static string cacheDirectory;
         public static string configDirectory;
 
+        public const string epicLootGUID = "randyknapp.mods.epicloot";
+        public static bool epicLootIsLoaded;
+
         public static FileSystemWatcher configFolderWatcher;
 
         public enum MapType
@@ -151,6 +156,8 @@ namespace NomapPrinter
             Game.isModded = true;
 
             customLayerExplored.ValueChanged += new Action(MapMaker.ResetExploredMapOnTextureChange);
+
+            epicLootIsLoaded = Chainloader.PluginInfos.ContainsKey(epicLootGUID);
         }
 
         void Start()
