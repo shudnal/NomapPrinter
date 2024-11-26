@@ -1,3 +1,7 @@
+# 1.3.10
+* LocalFolder made default choice for Data Storage config
+* Red circle of random event will not be showed on map without EpicLoot installed
+
 # 1.3.9
 * comfort and base pieces limitations now works in every mode if set
 
