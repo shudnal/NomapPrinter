@@ -16,7 +16,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.10";
+        public const string pluginVersion = "1.3.11";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -86,6 +86,7 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showPinBed;
         public static ConfigEntry<bool> showPinDeath;
         public static ConfigEntry<bool> showPinEpicLoot;
+        public static ConfigEntry<bool> showLastDeathPin;
 
         public static ConfigEntry<string> messageStart;
         public static ConfigEntry<string> messageSaving;
@@ -278,6 +279,7 @@ namespace NomapPrinter
             showPinBed = config("Pins list", "Show Bed pins", false, "Show Bed pins on drawed map");
             showPinDeath = config("Pins list", "Show Death pins", false, "Show Death pins on drawed map");
             showPinEpicLoot = config("Pins list", "Show Epic Loot pins", true, "Show Epic Loot pins on drawed map");
+            showLastDeathPin = config("Pins list", "Show Last Death pin", true, "Show pin where you died last time");
 
             tablePartsSwap = config("Table", "Swap interaction behaviour on map table parts", false, "Make \"Read map\" part to open interactive map and \"Record discoveries\" part to generate map. +" +
                                                                                                      "\nDoesn't work in Show On Interaction map mode [Not Synced with Server]", false);

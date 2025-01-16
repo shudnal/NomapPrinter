@@ -1219,6 +1219,7 @@ namespace NomapPrinter
             if (Minimap.instance == null)
                 return pinsToPrint;
 
+            long playerID = Player.m_localPlayer.GetPlayerID();
             foreach (Minimap.PinData pin in Minimap.instance.m_pins)
             {
                 if (pin.m_icon.name != "mapicon_start")
@@ -1228,7 +1229,7 @@ namespace NomapPrinter
                         if (showNonCheckedPins.Value && pin.m_checked)
                             continue;
 
-                        if (showMyPins.Value && pin.m_ownerID != 0L)
+                        if (showMyPins.Value && pin.m_ownerID != 0L && pin.m_ownerID != playerID)
                             continue;
 
                         if (showExploredPins.Value)
@@ -1267,7 +1268,7 @@ namespace NomapPrinter
                 "mapicon_start" => showPinStart.Value,
                 "mapicon_trader" => showPinTrader.Value,
                 "mapicon_bed" => showPinBed.Value,
-                "mapicon_death" => showPinDeath.Value,
+                "mapicon_death" => showPinDeath.Value || showLastDeathPin.Value,
                 "mapicon_eventarea" => showPinEpicLoot.Value && epicLootIsLoaded,
                 "MapIconBounty" => showPinEpicLoot.Value,
                 "TreasureMapIcon" => showPinEpicLoot.Value,
@@ -1298,12 +1299,16 @@ namespace NomapPrinter
             if (pin.m_icon == null)
                 return false;
 
-            bool showIcon = IsIconConfiguredShowable(pin.m_icon.name);
-
-            if (showIcon && !pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
+            if (!IsIconConfiguredShowable(pin.m_icon.name))
                 return false;
 
-            return showIcon;
+            if (pin.m_type == Minimap.PinType.Death && showLastDeathPin.Value && !showPinDeath.Value && pin.m_pos != Game.instance.GetPlayerProfile().GetDeathPoint())
+                return false;
+
+            if (!pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
+                return false;
+
+            return true;
         }
 
         private static bool AddPinIconToCache(Sprite icon)

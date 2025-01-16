@@ -1,3 +1,7 @@
+# 1.3.11
+* fixed sometimes your own pins was not showing on map after sharing pins with others
+* added new pin options to show last death pin
+
 # 1.3.10
 * LocalFolder made default choice for Data Storage config
 * Red circle of random event will not be showed on map without EpicLoot installed
