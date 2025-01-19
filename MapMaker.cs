@@ -1209,6 +1209,19 @@ namespace NomapPrinter
             return explorationPos.r == 0f || showSharedMap.Value && explorationPos.g == 0f;
         }
 
+        private static bool IsPinToShowNotOwner(Minimap.PinData pin)
+        {
+            return pin.m_type switch
+            {
+                Minimap.PinType.Boss => true,
+                Minimap.PinType.Hildir1 => true,
+                Minimap.PinType.Hildir2 => true,
+                Minimap.PinType.Hildir3 => true,
+                Minimap.PinType.None => true,
+                _ => false
+            };
+        }
+
         private static List<KeyValuePair<Vector3, string>> GetPinsToPrint()
         {
             List<KeyValuePair<Vector3, string>> pinsToPrint = new List<KeyValuePair<Vector3, string>>();    // key - map position, value - icon name
@@ -1229,7 +1242,7 @@ namespace NomapPrinter
                         if (showNonCheckedPins.Value && pin.m_checked)
                             continue;
 
-                        if (showMyPins.Value && pin.m_ownerID != 0L && pin.m_ownerID != playerID)
+                        if (showMyPins.Value && pin.m_ownerID != 0L && pin.m_ownerID != playerID && !IsPinToShowNotOwner(pin))
                             continue;
 
                         if (showExploredPins.Value)

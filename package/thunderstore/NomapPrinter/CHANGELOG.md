@@ -1,3 +1,6 @@
+# 1.3.12
+* fixed not showing boss' and Hildir's pins not showing when initially explored by other players
+
 # 1.3.11
 * fixed sometimes your own pins was not showing on map after sharing pins with others
 * added new pin options to show last death pin
