@@ -16,7 +16,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.12";
+        public const string pluginVersion = "1.3.13";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -284,7 +284,6 @@ namespace NomapPrinter
             tablePartsSwap = config("Table", "Swap interaction behaviour on map table parts", false, "Make \"Read map\" part to open interactive map and \"Record discoveries\" part to generate map. +" +
                                                                                                      "\nDoesn't work in Show On Interaction map mode [Not Synced with Server]", false);
 
-            localPath = Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
             cacheDirectory = Path.Combine(Paths.CachePath, pluginID);
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
 
@@ -497,6 +496,11 @@ namespace NomapPrinter
         {
             public static void Postfix() => SetupConfigWatcher(enabled: false);
         }
-        
+
+        [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
+        public static class FejdStartup_Start_GetLocalPath
+        {
+            public static void Postfix() => localPath = Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
+        }
     }
 }

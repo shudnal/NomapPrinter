@@ -1,3 +1,6 @@
+# 1.3.13
+* patch 0.220.3
+
 # 1.3.12
 * fixed not showing boss' and Hildir's pins not showing when initially explored by other players
 
