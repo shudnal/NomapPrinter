@@ -1,3 +1,6 @@
+# 1.3.14
+* ServerSync updated
+
 # 1.3.13
 * patch 0.220.3
 
