@@ -16,7 +16,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.14";
+        public const string pluginVersion = "1.3.15";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -107,7 +107,8 @@ namespace NomapPrinter
 
         public static NomapPrinter instance;
 
-        public static string localPath;
+        private static string _localPath = null;
+        public static string localPath => _localPath ??= Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
         public static string cacheDirectory;
         public static string configDirectory;
 
@@ -495,12 +496,6 @@ namespace NomapPrinter
         public static class ZoneSystem_OnDestroy_CustomTexturesWatcherDisable
         {
             public static void Postfix() => SetupConfigWatcher(enabled: false);
-        }
-
-        [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
-        public static class FejdStartup_Start_GetLocalPath
-        {
-            public static void Postfix() => localPath = Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
         }
     }
 }

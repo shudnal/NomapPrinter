@@ -466,9 +466,24 @@ namespace NomapPrinter
             return true;
         }
 
+        private static string SanitizeFilePart(string value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Trim('.') == string.Empty)
+                return fallback;
+
+            foreach (char c in Path.GetInvalidFileNameChars())
+                value = value.Replace(c, '_');
+
+            return value;
+        }
+
         private static string LocalFileName(Player player)
         {
-            return Path.Combine(localPath, localFolder.Value.IsNullOrWhiteSpace() ? pluginID : localFolder.Value, $"{pluginID}.{player.GetPlayerName()}.{ZNet.instance.GetWorldName()}.png");
+            string playerName = SanitizeFilePart(player?.GetPlayerName(), "UnknownPlayer");
+            string worldName = SanitizeFilePart(ZNet.instance?.GetWorldName(), "UnknownWorld");
+            string folderName = localFolder.Value.IsNullOrWhiteSpace() ? pluginID : localFolder.Value;
+
+            return Path.Combine(localPath, folderName, $"{pluginID}.{playerName}.{worldName}.png");
         }
 
         private static bool LoadMapFromLocalFile(Player player)

@@ -60,6 +60,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>F:\Steam\steamapps\common\Valheim\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
+    <Reference Include="netstandard, Version=2.1.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Assemblies\stable\netstandard.dll</HintPath>
+    </Reference>
     <Reference Include="ServerSync">
       <HintPath>Libs\ServerSync.dll</HintPath>
     </Reference>
@@ -107,9 +111,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ILRepack.targets" />
-    <Content Include="Libs\ServerSync.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ILRepack.Lib.MSBuild.Task">

@@ -1,3 +1,6 @@
+# 1.3.15
+* fixed minor rare issue with local file name
+
 # 1.3.14
 * ServerSync updated
 
