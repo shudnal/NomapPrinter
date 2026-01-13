@@ -11,33 +11,129 @@ namespace NomapPrinter
 {
     internal static class MapPinTexts
     {
+        private const int TextLayer = 31;
+
         private static TMP_FontAsset defaultFontAsset = null;
 
-        internal static void ClearPinFont() => defaultFontAsset = null;
+        // Один общий TextMeshPro, камера и RenderTexture для всех рендеров
+        private static GameObject textGO;
+        private static TextMeshPro tmp;
+        private static GameObject camGO;
+        private static Camera cam;
+        private static RenderTexture rt;
+        private static Texture2D readTex;
 
-        private static void SetDefaultFontAsset()
+        // Кэш текстур текста: ключ — текст + настройки шрифта
+        private static readonly Dictionary<string, CachedText> textCache = new Dictionary<string, CachedText>();
+
+        private struct CachedText
         {
-            TMP_FontAsset defaultFont = null;
+            public Color32[] Pixels;
+            public int Width;
+            public int Height;
+        }
 
-            foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
+        internal static void ClearPinFont()
+        {
+            defaultFontAsset = null;
+            textCache.Clear();
+        }
+
+        private static void EnsureFontAsset()
+        {
+            if (defaultFontAsset != null)
+                return;
+
+            TMP_FontAsset fontCandidate = null;
+
+            // Пробуем взять шрифт с карты (как в игре)
+            if (Minimap.instance?.m_pinNamePrefab?.GetComponentInChildren<TMP_Text>()?.font is TMP_FontAsset minimapFont)
+                fontCandidate = minimapFont;
+
+            // Если задано имя шрифта в конфиге — пытаемся найти его среди загруженных
+            if (!pinTextFont.Value.IsNullOrWhiteSpace())
             {
-                if (font.name.Contains(pinTextFont.Value))
+                foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
                 {
-                    defaultFontAsset = font;
-                    return;
+                    if (font.name.Contains(pinTextFont.Value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        defaultFontAsset = font;
+                        return;
+                    }
+
+                    if (fontCandidate == null && font.name.Contains("Fallback", StringComparison.OrdinalIgnoreCase))
+                        fontCandidate = font;
                 }
-                else if (defaultFont == null && font.name.Contains("Fallback"))
-                    defaultFont = font;
             }
 
             if (defaultFontAsset == null)
             {
-                defaultFontAsset = defaultFont;
-                if (defaultFont != null)
-                    LogInfo($"Unable to find font {pinTextFont.Value}, falling back to {defaultFont.name}");
+                defaultFontAsset = fontCandidate;
+                if (defaultFontAsset != null)
+                    LogInfo($"Unable to find font {pinTextFont.Value}, falling back to {defaultFontAsset.name}");
                 else
                     LogInfo($"Unable to find font {pinTextFont.Value} or fallback font");
             }
+        }
+
+        private static void EnsureRenderObjects()
+        {
+            if (textGO == null)
+            {
+                textGO = new GameObject("MapTMPText")
+                {
+                    layer = TextLayer
+                };
+
+                TMP_FontAsset previousFont = TMP_Settings.defaultFontAsset;
+                TMP_Settings.defaultFontAsset = defaultFontAsset;
+
+                tmp = textGO.AddComponent<TextMeshPro>();
+
+                TMP_Settings.defaultFontAsset = previousFont;
+
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.textWrappingMode = TextWrappingModes.NoWrap;
+                tmp.richText = false;
+            }
+
+            if (camGO == null)
+            {
+                camGO = new GameObject("MapTMPTextCam")
+                {
+                    layer = TextLayer
+                };
+                cam = camGO.AddComponent<Camera>();
+                cam.orthographic = true;
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = Color.clear;
+                cam.cullingMask = 1 << TextLayer;
+            }
+        }
+
+        private static void EnsureRenderTargets(int width, int height)
+        {
+            if (width <= 0 || height <= 0)
+                return;
+
+            if (rt == null || rt.width != width || rt.height != height)
+            {
+                rt?.Release();
+                rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
+            }
+
+            if (readTex == null || readTex.width != width || readTex.height != height)
+            {
+                if (readTex != null)
+                    Object.Destroy(readTex);
+
+                readTex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            }
+        }
+
+        private static string BuildCacheKey(string text)
+        {
+            return $"{text}|{pinTextSize.Value}|{pinTextFontStyle.Value}|{pinTextFontColor.Value.r},{pinTextFontColor.Value.g},{pinTextFontColor.Value.b},{pinTextFontColor.Value.a}";
         }
 
         private static Color32[] RenderText(string text, out int width, out int height)
@@ -45,27 +141,25 @@ namespace NomapPrinter
             width = 0;
             height = 0;
 
-            if (TMP_Settings.defaultFontAsset == null)
-                return null;
-
             if (text.IsNullOrWhiteSpace())
                 return null;
 
-            int layer = 31;
+            EnsureFontAsset();
+            if (defaultFontAsset == null)
+                return null;
 
-            var textGO = new GameObject("MapTMPText")
+            EnsureRenderObjects();
+
+            string key = BuildCacheKey(text);
+            if (textCache.TryGetValue(key, out CachedText cached))
             {
-                layer = layer
-            };
+                width = cached.Width;
+                height = cached.Height;
+                return cached.Pixels;
+            }
 
-            var tmp = textGO.AddComponent<TextMeshPro>();
-            tmp.font = TMP_Settings.defaultFontAsset;
+            tmp.font = defaultFontAsset;
             tmp.text = text;
-            tmp.color = Color.white;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.textWrappingMode = TextWrappingModes.NoWrap;
-            tmp.richText = false;
-
             tmp.fontSize = pinTextSize.Value * 10;
             tmp.fontStyle = pinTextFontStyle.Value;
             tmp.color = pinTextFontColor.Value;
@@ -73,46 +167,40 @@ namespace NomapPrinter
             tmp.ForceMeshUpdate();
 
             Bounds b = tmp.textBounds;
-
             width = Mathf.CeilToInt(b.size.x);
             height = Mathf.CeilToInt(b.size.y);
+
+            if (width <= 0 || height <= 0)
+                return null;
 
             textGO.transform.position = new Vector3(
                 -b.center.x,
                 -b.center.y,
                 0);
 
-            var camGO = new GameObject("MapTMPTextCam");
-            camGO.layer = layer;
+            EnsureRenderTargets(width, height);
 
-            var cam = camGO.AddComponent<Camera>();
-            cam.orthographic = true;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.clear;
-            cam.cullingMask = 1 << layer;
             float textCenterY = (b.min.y + b.max.y) * 0.5f;
             cam.transform.position = new Vector3(0, textCenterY, -10);
             cam.orthographicSize = height / 2f;
-
-            var rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
             cam.targetTexture = rt;
 
+            RenderTexture.active = rt;
             cam.Render();
 
-            RenderTexture.active = rt;
-
-            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-            tex.Apply();
+            readTex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            readTex.Apply();
 
             RenderTexture.active = null;
 
-            var pixels = tex.GetPixels32();
+            Color32[] pixels = readTex.GetPixels32();
 
-            Object.Destroy(textGO);
-            Object.Destroy(camGO);
-            Object.Destroy(tex);
-            rt.Release();
+            textCache[key] = new CachedText
+            {
+                Pixels = pixels,
+                Width = width,
+                Height = height
+            };
 
             return pixels;
         }
@@ -129,19 +217,24 @@ namespace NomapPrinter
         {
             for (int y = 0; y < h; y++)
             {
+                int my = startY + y;
+                if (my < 0 || my >= mapSize)
+                    continue;
+
+                int rowOffset = my * mapSize;
+                int srcRowOffset = y * w;
+
                 for (int x = 0; x < w; x++)
                 {
-                    Color32 tp = textPixels[y * w + x];
+                    int mx = startX + x;
+                    if (mx < 0 || mx >= mapSize)
+                        continue;
+
+                    Color32 tp = textPixels[srcRowOffset + x];
                     if (tp.a == 0)
                         continue;
 
-                    int mx = startX + x;
-                    int my = startY + y;
-
-                    if (mx < 0 || my < 0 || mx >= mapSize || my >= mapSize)
-                        continue;
-
-                    int pos = my * mapSize + mx;
+                    int pos = rowOffset + mx;
 
                     Color32 final = color;
                     final.a = (byte)(tp.a * color.a / 255);
@@ -166,16 +259,6 @@ namespace NomapPrinter
             int startX = centerX - w / 2;
             int startY = topY;
 
-            /*DrawDebugRect(
-                map,
-                mapSize,
-                startX,
-                startY,
-                w,
-                h,
-                new Color32(255, 0, 0, 255)
-            );*/
-
             // shadow
             DrawTextLayer(map, mapSize, textPixels, w, h,
                 startX + 1, startY - 1,
@@ -199,74 +282,20 @@ namespace NomapPrinter
                 Color.white);
         }
 
-        private static void DrawDebugRect(
-            Color32[] map,
-            int mapSize,
-            int x,
-            int y,
-            int w,
-            int h,
-            Color32 color)
-        {
-            // top & bottom
-            for (int i = 0; i < w; i++)
-            {
-                int tx = x + i;
-                if (tx < 0 || tx >= mapSize)
-                    continue;
-
-                if (y >= 0 && y < mapSize)
-                    map[y * mapSize + tx] = color;
-
-                int by = y + h - 1;
-                if (by >= 0 && by < mapSize)
-                    map[by * mapSize + tx] = color;
-            }
-
-            // left & right
-            for (int i = 0; i < h; i++)
-            {
-                int ty = y + i;
-                if (ty < 0 || ty >= mapSize)
-                    continue;
-
-                if (x >= 0 && x < mapSize)
-                    map[ty * mapSize + x] = color;
-
-                int rx = x + w - 1;
-                if (rx >= 0 && rx < mapSize)
-                    map[ty * mapSize + rx] = color;
-            }
-        }
-
         internal static IEnumerator DrawPinTexts(Color32[] map, int mapSize, List<Tuple<int, int, string>> pinTexts)
         {
-            TMP_FontAsset previousFont = TMP_Settings.defaultFontAsset;
-
-            if (TMP_Settings.defaultFontAsset == null)
-            {
-                if (defaultFontAsset == null)
-                {
-                    defaultFontAsset = Minimap.instance.m_pinNamePrefab.GetComponentInChildren<TMP_Text>().font;
-
-                    if (defaultFontAsset == null || !pinTextFont.Value.IsNullOrWhiteSpace())
-                        SetDefaultFontAsset();
-                }
-
-            }
+            EnsureFontAsset();
 
             foreach (var pin in pinTexts)
             {
-                TMP_Settings.defaultFontAsset = defaultFontAsset;
-                
+                string localized = Localization.instance.Localize(pin.Item3);
+
                 DrawTextOnMap(
                     map,
                     mapSize,
-                    Localization.instance.Localize(pin.Item3),
+                    localized,
                     pin.Item1,
-                    pin.Item2 - MapMaker.iconSize - pinTextOffset.Value);
-                
-                TMP_Settings.defaultFontAsset = previousFont;
+                    pin.Item2);
 
                 yield return null;
             }
