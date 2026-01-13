@@ -1,15 +1,15 @@
 ﻿using BepInEx;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using static NomapPrinter.NomapPrinter;
-using UnityEngine;
-using System.Diagnostics;
-using HarmonyLib;
 using System.Text;
+using System.Threading;
+using UnityEngine;
+using static NomapPrinter.NomapPrinter;
 
 namespace NomapPrinter
 {
@@ -424,7 +424,7 @@ namespace NomapPrinter
         private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
 
         private static Texture2D iconSpriteTexture;   // Current sprite texture is not readable. Saving a cached copy the first time the variable is accessed 
-        private static int iconSize = 32;
+        internal static int iconSize = 32;
 
         private static long worldUID;
 
@@ -1152,27 +1152,32 @@ namespace NomapPrinter
 
         private static float GetDeepNorthOceanGradient(float x, float y)
         {
-            double num = (double)WorldGenerator.WorldAngle(x, y - WorldGenerator.ashlandsYOffset) * 100.0;
-            return (float)(((double)DUtils.Length(x, y - WorldGenerator.ashlandsYOffset) - ((double)WorldGenerator.ashlandsMinDistance + num)) / 300.0);
+            double num = (double)WorldGenerator.WorldAngle(x, y + WorldGenerator.deepNorthYOffset) * 100.0;
+            return (float)(((double)DUtils.Length(x, y + WorldGenerator.deepNorthYOffset) - ((double)WorldGenerator.deepNorthMinDistance + num)) / 300.0);
         }
 
         private static IEnumerator AddPinsOnMap(Color32[] map, int mapSize)
         {
-            foreach (KeyValuePair<Vector3, string> pin in GetPinsToPrint())
+            List<Tuple<int, int, string>> pinTexts = new List<Tuple<int, int, string>>();
+
+            foreach (Minimap.PinData pin in GetPinsToPrint())
             {
                 // get position in relative float instead of vector
-                Minimap.instance.WorldToMapPoint(pin.Key, out float mx, out float my);
+                Minimap.instance.WorldToMapPoint(pin.m_pos, out float mx, out float my);
 
                 // filter icons outside of map circle
                 if (mx >= 1 || my >= 1 || mx <= 0 || my <= 0)
                     continue;
 
-                Color32[] iconPixels = pinIcons[pin.Value];
+                Color32[] iconPixels = pinIcons[pin.m_icon.name];
                 if (iconPixels != null)
                 {
+                    int posX = (int)(mx * mapSize);
+                    int posY = (int)(my * mapSize);
+
                     // get icon position in array
-                    int iconmx = Math.Max((int)(mx * mapSize) - (iconSize / 2), 0);
-                    int iconmy = Math.Max((int)(my * mapSize) - (iconSize / 2), 0);
+                    int iconmx = Math.Max(posX - (iconSize / 2), 0);
+                    int iconmy = Math.Max(posY - (iconSize / 2), 0);
 
                     // overlay icon pixels to map array with lerp
                     for (int row = 0; row < iconSize; row++)
@@ -1182,6 +1187,20 @@ namespace NomapPrinter
                             int pos = (iconmy + row) * mapSize + iconmx + col;
 
                             Color32 iconPix = iconPixels[row * iconSize + col];
+                            if (iconPix.a != 0 && pinsHildirQuestColored.Value)
+                            {
+                                byte alpha = iconPix.a;
+                                
+                                if (pin.m_type == Minimap.PinType.Hildir1)
+                                    iconPix = Color32.Lerp(iconPix, pinsHildirQuestPin1Color.Value, 0.5f);
+                                else if (pin.m_type == Minimap.PinType.Hildir2)
+                                    iconPix = Color32.Lerp(iconPix, pinsHildirQuestPin2Color.Value, 0.5f);
+                                else if (pin.m_type == Minimap.PinType.Hildir3)
+                                    iconPix = Color32.Lerp(iconPix, pinsHildirQuestPin3Color.Value, 0.5f);
+
+                                iconPix.a = alpha;
+                            }
+
                             if (mapType.Value == MapType.Chart || mapType.Value == MapType.OldChart)
                             {
                                 // add yellow tint of chart maps, one iteration is enough for OldChart
@@ -1192,10 +1211,16 @@ namespace NomapPrinter
                             map[pos].a = byte.MaxValue;  // make opaque again
                         }
                     }
+
+                    pinTexts.Add(Tuple.Create(posX, posY, pin.m_name));
                 }
 
                 yield return null;
             }
+
+            if (pinTextEnabled.Value)
+                yield return MapPinTexts.DrawPinTexts(map, mapSize, pinTexts);
+
         }
 
         private static bool IsExplored(int x, int y)
@@ -1222,9 +1247,9 @@ namespace NomapPrinter
             };
         }
 
-        private static List<KeyValuePair<Vector3, string>> GetPinsToPrint()
+        private static List<Minimap.PinData> GetPinsToPrint()
         {
-            List<KeyValuePair<Vector3, string>> pinsToPrint = new List<KeyValuePair<Vector3, string>>();    // key - map position, value - icon name
+            List<Minimap.PinData> pinsToPrint = new List<Minimap.PinData>();
 
             if (!showPins.Value)
                 return pinsToPrint;
@@ -1255,7 +1280,7 @@ namespace NomapPrinter
                 }
 
                 if (IsShowablePinIcon(pin))
-                    pinsToPrint.Add(new KeyValuePair<Vector3, string>(pin.m_pos, pin.m_icon.name));
+                    pinsToPrint.Add(pin);
             }
 
             return pinsToPrint;

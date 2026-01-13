@@ -1,12 +1,14 @@
 ﻿using BepInEx.Configuration;
 using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using HarmonyLib;
 using ServerSync;
 using System;
-using System.Linq;
 using System.IO;
+using System.Linq;
+using UnityEngine;
 using static Terminal;
-using BepInEx.Bootstrap;
 
 namespace NomapPrinter
 {
@@ -70,6 +72,18 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showMyPins;
         public static ConfigEntry<bool> showNonCheckedPins;
         public static ConfigEntry<bool> showMerchantPins;
+
+        public static ConfigEntry<bool> pinsHildirQuestColored;
+        public static ConfigEntry<Color> pinsHildirQuestPin1Color;
+        public static ConfigEntry<Color> pinsHildirQuestPin2Color;
+        public static ConfigEntry<Color> pinsHildirQuestPin3Color;
+
+        public static ConfigEntry<bool> pinTextEnabled;
+        public static ConfigEntry<int> pinTextSize;
+        public static ConfigEntry<string> pinTextFont;
+        public static ConfigEntry<TMPro.FontStyles> pinTextFontStyle;
+        public static ConfigEntry<Color> pinTextFontColor;
+        public static ConfigEntry<int> pinTextOffset;
 
         public static ConfigEntry<bool> showEveryPin;
         public static ConfigEntry<bool> showPinStart;
@@ -264,6 +278,20 @@ namespace NomapPrinter
             showMerchantPins = config("Pins", "Show merchants pins always", true, "Show merchant pins even in unexplored part of the map");
             showMyPins = config("Pins", "Show only my pins", true, "Only show your pins on the map");
             showNonCheckedPins = config("Pins", "Show only unchecked pins", true, "Only show pins that doesn't checked (have no red cross)");
+
+            pinsHildirQuestColored = config("Pins - Hildir quests", "Color Hildir pins", true, "Show Hildir pins in different colors");
+            pinsHildirQuestPin1Color = config("Pins - Hildir quests", "Color of Smouldering Tomb", new Color(0.894f, 0.294f, 0.035f, 1f), "Pin color is tinted by selected color");
+            pinsHildirQuestPin2Color = config("Pins - Hildir quests", "Color of Howling Cavern", new Color(0.204f, 0.345f, 0.827f, 1f), "Pin color is tinted by selected color");
+            pinsHildirQuestPin3Color = config("Pins - Hildir quests", "Sealed Tower", new Color(0.118f, 0.729f, 0.035f, 1f), "Pin color is tinted by selected color");
+
+            pinTextEnabled = config("Pins - Text", "Enabled", true, "Enabled pin texts");
+            pinTextSize = config("Pins - Text", "Font size", 20, "Font size");
+            pinTextFont = config("Pins - Text", "Font", "", "Font override. Default font is pin font.");
+            pinTextFontStyle = config("Pins - Text", "Font style", TMPro.FontStyles.Bold, "Font style");
+            pinTextFontColor = config("Pins - Text", "Font color", Color.white, "Font color");
+            pinTextOffset = config("Pins - Text", "Text offset", 1, "From icon bottom");
+
+            pinTextFont.SettingChanged += (s,e) => MapPinTexts.ClearPinFont();
 
             showEveryPin = config("Pins list", "Show all pins", false, "Show all pins");
             showPinStart = config("Pins list", "Show Start pins", true, "Show Start pin on drawed map");
