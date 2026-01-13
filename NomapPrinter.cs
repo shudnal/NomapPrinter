@@ -253,7 +253,7 @@ namespace NomapPrinter
             sharedFile.SettingChanged += (sender, args) => MapViewer.SetupSharedMapFileWatcher();
 
             mapType = config("Map style", "Map type", MapType.Chart, "Type of generated map");
-            mapSize = config("Map style", "Map size", MapSize.Normal, "Resolution of generated map. More details means smoother lines but more data will be stored");
+            mapSize = config("Map style", "Map size", MapSize.Smooth, "Resolution of generated map. More details means smoother lines but more data will be stored");
             mapDefaultScale = config("Map style", "Map zoom default scale", 0.7f, "Default scale of opened map, more is closer, less is farther.");
             mapMinimumScale = config("Map style", "Map zoom minimum scale", 0.25f, "Minimum scale of opened map, more is closer, less is farther.");
             mapMaximumScale = config("Map style", "Map zoom maximum scale", 2.0f, "Maximum scale of opened map, more is closer, less is farther.");
