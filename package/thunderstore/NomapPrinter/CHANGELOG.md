@@ -1,3 +1,9 @@
+# 1.4.0
+* pin texts
+* traders pins in double size like in vanilla game
+* traders names
+* Hildir quest markers can be colored to get it without text
+
 # 1.3.15
 * fixed minor rare issue with local file name
 

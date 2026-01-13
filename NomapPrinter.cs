@@ -1,5 +1,4 @@
-﻿using BepInEx.Configuration;
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -18,7 +17,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.3.15";
+        public const string pluginVersion = "1.4.0";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -72,6 +71,8 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showMyPins;
         public static ConfigEntry<bool> showNonCheckedPins;
         public static ConfigEntry<bool> showMerchantPins;
+        public static ConfigEntry<bool> showPinsDoubleSize;
+        public static ConfigEntry<bool> showMerchantPinsNames;
 
         public static ConfigEntry<bool> pinsHildirQuestColored;
         public static ConfigEntry<Color> pinsHildirQuestPin1Color;
@@ -278,8 +279,10 @@ namespace NomapPrinter
             showMerchantPins = config("Pins", "Show merchants pins always", true, "Show merchant pins even in unexplored part of the map");
             showMyPins = config("Pins", "Show only my pins", true, "Only show your pins on the map");
             showNonCheckedPins = config("Pins", "Show only unchecked pins", true, "Only show pins that doesn't checked (have no red cross)");
+            showPinsDoubleSize = config("Pins", "Show static pins in double size", true, "Show pins of the Sacrificial Stones, traders and others in double size (vanilla game behaviour)");
+            showMerchantPinsNames = config("Pins", "Show merchants names", true, "Show names of the traders");
 
-            pinsHildirQuestColored = config("Pins - Hildir quests", "Color Hildir pins", true, "Show Hildir pins in different colors");
+            pinsHildirQuestColored = config("Pins - Hildir quests", "Color Hildir pins", false, "Show Hildir pins in different colors. Useful if you disable pin texts.");
             pinsHildirQuestPin1Color = config("Pins - Hildir quests", "Color of Smouldering Tomb", new Color(0.894f, 0.294f, 0.035f, 1f), "Pin color is tinted by selected color");
             pinsHildirQuestPin2Color = config("Pins - Hildir quests", "Color of Howling Cavern", new Color(0.204f, 0.345f, 0.827f, 1f), "Pin color is tinted by selected color");
             pinsHildirQuestPin3Color = config("Pins - Hildir quests", "Sealed Tower", new Color(0.118f, 0.729f, 0.035f, 1f), "Pin color is tinted by selected color");

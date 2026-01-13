@@ -1171,7 +1171,7 @@ namespace NomapPrinter
                 if (mx >= 1 || my >= 1 || mx <= 0 || my <= 0)
                     continue;
 
-                bool doubleSizeIcon = pin.m_doubleSize && NomapPrinter.mapSize.Value == MapSize.Smooth;
+                bool doubleSizeIcon = showPinsDoubleSize.Value && pin.m_doubleSize && NomapPrinter.mapSize.Value == MapSize.Smooth;
 
                 Color32[] iconPixels = doubleSizeIcon ? pinIconsDouble[pin.m_icon.name] : pinIcons[pin.m_icon.name];
                 var size = doubleSizeIcon ? iconSize * 2 : iconSize;
@@ -1230,7 +1230,7 @@ namespace NomapPrinter
 
         private static string GetPinName(Minimap.PinData pin)
         {
-            if (!pin.m_name.IsNullOrWhiteSpace())
+            if (!pin.m_name.IsNullOrWhiteSpace() || !showMerchantPinsNames.Value)
                 return pin.m_name;
 
             if (pin.m_type != Minimap.PinType.None)
