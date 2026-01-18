@@ -12,10 +12,11 @@ namespace NomapPrinter
     internal static class MapPinTexts
     {
         private const int TextLayer = 31;
+        private const string TextObjectName = "MapTMPText";
+        private const string TextCamObjectName = "MapTMPTextCam";
 
         private static TMP_FontAsset defaultFontAsset = null;
 
-        // Один общий TextMeshPro, камера и RenderTexture для всех рендеров
         private static GameObject textGO;
         private static TextMeshPro tmp;
         private static GameObject camGO;
@@ -23,7 +24,6 @@ namespace NomapPrinter
         private static RenderTexture rt;
         private static Texture2D readTex;
 
-        // Кэш текстур текста: ключ — текст + настройки шрифта
         private static readonly Dictionary<string, CachedText> textCache = new Dictionary<string, CachedText>();
 
         private struct CachedText
@@ -46,11 +46,9 @@ namespace NomapPrinter
 
             TMP_FontAsset fontCandidate = null;
 
-            // Пробуем взять шрифт с карты (как в игре)
             if (Minimap.instance?.m_pinNamePrefab?.GetComponentInChildren<TMP_Text>()?.font is TMP_FontAsset minimapFont)
                 fontCandidate = minimapFont;
 
-            // Если задано имя шрифта в конфиге — пытаемся найти его среди загруженных
             if (!pinTextFont.Value.IsNullOrWhiteSpace())
             {
                 foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
@@ -69,10 +67,12 @@ namespace NomapPrinter
             if (defaultFontAsset == null)
             {
                 defaultFontAsset = fontCandidate;
-                if (defaultFontAsset != null)
-                    LogInfo($"Unable to find font {pinTextFont.Value}, falling back to {defaultFontAsset.name}");
-                else
-                    LogInfo($"Unable to find font {pinTextFont.Value} or fallback font");
+                
+                if (!pinTextFont.Value.IsNullOrWhiteSpace())
+                    if (defaultFontAsset != null)
+                        LogInfo($"Unable to find font {pinTextFont.Value}, falling back to {defaultFontAsset.name}");
+                    else
+                        LogInfo($"Unable to find font {pinTextFont.Value} or fallback font");
             }
         }
 
@@ -80,7 +80,7 @@ namespace NomapPrinter
         {
             if (textGO == null)
             {
-                textGO = new GameObject("MapTMPText")
+                textGO = new GameObject(TextObjectName)
                 {
                     layer = TextLayer
                 };
@@ -99,7 +99,7 @@ namespace NomapPrinter
 
             if (camGO == null)
             {
-                camGO = new GameObject("MapTMPTextCam")
+                camGO = new GameObject(TextCamObjectName)
                 {
                     layer = TextLayer
                 };
@@ -109,6 +109,12 @@ namespace NomapPrinter
                 cam.backgroundColor = Color.clear;
                 cam.cullingMask = 1 << TextLayer;
             }
+        }
+
+        private static void ChangeRenderObjectsVisibility(bool active = true)
+        {
+            textGO?.SetActive(active);
+            camGO?.SetActive(active);
         }
 
         private static void EnsureRenderTargets(int width, int height)
@@ -144,11 +150,8 @@ namespace NomapPrinter
             if (text.IsNullOrWhiteSpace())
                 return null;
 
-            EnsureFontAsset();
             if (defaultFontAsset == null)
                 return null;
-
-            EnsureRenderObjects();
 
             string key = BuildCacheKey(text);
             if (textCache.TryGetValue(key, out CachedText cached))
@@ -285,6 +288,9 @@ namespace NomapPrinter
         internal static IEnumerator DrawPinTexts(Color32[] map, int mapSize, List<Tuple<int, int, string>> pinTexts)
         {
             EnsureFontAsset();
+            EnsureRenderObjects();
+            
+            ChangeRenderObjectsVisibility(true);
 
             foreach (var pin in pinTexts)
             {
@@ -299,6 +305,8 @@ namespace NomapPrinter
 
                 yield return null;
             }
+
+            ChangeRenderObjectsVisibility(false);
         }
     }
 }

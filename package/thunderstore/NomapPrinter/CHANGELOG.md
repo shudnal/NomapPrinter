@@ -1,3 +1,7 @@
+# 1.4.1
+* fixed minor issues with pin text generation
+* pins are sorted by type for better layering
+
 # 1.4.0
 * pin texts
 * traders pins in double size like in vanilla game

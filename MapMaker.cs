@@ -434,6 +434,42 @@ namespace NomapPrinter
 
         private static bool[] exploration;
 
+        private static int GetPinGroup(Minimap.PinType type)
+        {
+            switch (type)
+            {
+                case Minimap.PinType.Player:
+                case Minimap.PinType.Shout:
+                case Minimap.PinType.Ping:
+                case Minimap.PinType.EventArea:
+                case Minimap.PinType.Death:
+                    return 0;
+
+                case Minimap.PinType.Icon0:
+                case Minimap.PinType.Icon1:
+                case Minimap.PinType.Icon2:
+                case Minimap.PinType.Icon3:
+                case Minimap.PinType.Icon4:
+                    return 1;
+
+                case Minimap.PinType.Bed:
+                case Minimap.PinType.RandomEvent:
+                case Minimap.PinType.Boss:
+                    return 3;
+
+                case Minimap.PinType.Hildir1:
+                case Minimap.PinType.Hildir2:
+                case Minimap.PinType.Hildir3:
+                    return 4;
+
+                case Minimap.PinType.None:
+                    return 5;
+
+                default:
+                    return 2;
+            }
+        }
+
         public static void ResetExploredMap()
         {
             exploredMapData?.ResetExploredMap();
@@ -1305,16 +1341,12 @@ namespace NomapPrinter
                     pinsToPrint.Add(pin);
             }
 
-            pinsToPrint.Sort((a, b) =>
-            {
-                bool aNone = a.m_type == Minimap.PinType.None;
-                bool bNone = b.m_type == Minimap.PinType.None;
-
-                if (aNone == bNone)
-                    return 0;
-
-                return aNone ? 1 : -1;
-            });
+            pinsToPrint = pinsToPrint
+                .Select((pin, index) => (pin, index))
+                .OrderBy(x => GetPinGroup(x.pin.m_type))
+                .ThenBy(x => x.index)
+                .Select(x => x.pin)
+                .ToList();
 
             return pinsToPrint;
         }
