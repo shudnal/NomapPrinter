@@ -65,6 +65,7 @@ namespace NomapPrinter
         public static ConfigEntry<float> mapGamepadZoomSpeed;
         public static ConfigEntry<float> mapGamepadMoveSpeed;
         public static ConfigEntry<float> mapSizeMultiplier;
+        public static ConfigEntry<float> mapMouseScrollSpeed;
 
         public static ConfigEntry<bool> showPins;
         public static ConfigEntry<bool> showExploredPins;
@@ -265,6 +266,7 @@ namespace NomapPrinter
             mapGamepadZoomSpeed = config("Map style extended", "Map gamepad zoom speed", 1f, "Speed of map zoom while using gamepad. [Not Synced with Server]", false);
             mapGamepadMoveSpeed = config("Map style extended", "Map gamepad move speed", 1f, "Speed of map move while using gamepad. [Not Synced with Server]", false);
             mapSizeMultiplier = config("Map style extended", "Map size multiplier", 1f, "Use similar multiplier as in EWSize mod. Map size multiplier should also match world radius to get correct results.");
+            mapMouseScrollSpeed = config("Map style extended", "Map mouse scroll speed", 1f, "Multiplier of mouse scroll. [Not Synced with Server]", false);
 
             messageStart = config("Messages", "Drawing begin", "Remembering travels...", "Center message when drawing is started. [Not Synced with Server]", false);
             messageSaving = config("Messages", "Drawing end", "Drawing map...", "Center message when saving file is started. [Not Synced with Server]", false);
@@ -279,13 +281,13 @@ namespace NomapPrinter
             showMerchantPins = config("Pins", "Show merchants pins always", true, "Show merchant pins even in unexplored part of the map");
             showMyPins = config("Pins", "Show only my pins", true, "Only show your pins on the map");
             showNonCheckedPins = config("Pins", "Show only unchecked pins", true, "Only show pins that doesn't checked (have no red cross)");
-            showPinsDoubleSize = config("Pins", "Show static pins in double size", true, "Show pins of the Sacrificial Stones, traders and others in double size (vanilla game behaviour)");
+            showPinsDoubleSize = config("Pins", "Show static pins in double size", true, "Show pins of the Sacrificial Stones, traders and other important pins in double size (vanilla game behaviour)");
             showMerchantPinsNames = config("Pins", "Show merchants names", true, "Show names of the traders");
 
             pinsHildirQuestColored = config("Pins - Hildir quests", "Color Hildir pins", false, "Show Hildir pins in different colors. Useful if you disable pin texts.");
             pinsHildirQuestPin1Color = config("Pins - Hildir quests", "Color of Smouldering Tomb", new Color(0.894f, 0.294f, 0.035f, 1f), "Pin color is tinted by selected color");
             pinsHildirQuestPin2Color = config("Pins - Hildir quests", "Color of Howling Cavern", new Color(0.204f, 0.345f, 0.827f, 1f), "Pin color is tinted by selected color");
-            pinsHildirQuestPin3Color = config("Pins - Hildir quests", "Sealed Tower", new Color(0.118f, 0.729f, 0.035f, 1f), "Pin color is tinted by selected color");
+            pinsHildirQuestPin3Color = config("Pins - Hildir quests", "Color of Sealed Tower", new Color(0.118f, 0.729f, 0.035f, 1f), "Pin color is tinted by selected color");
 
             pinTextEnabled = config("Pins - Text", "Enabled", true, "Enabled pin texts");
             pinTextSize = config("Pins - Text", "Font size", 20, "Font size");
