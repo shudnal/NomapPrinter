@@ -172,7 +172,7 @@ namespace NomapPrinter
                 CenterMap();
             
             // enable scroll to change map scale
-            float scrollIncrement = ZInput.GetMouseScrollWheel() * 0.02f * mapMouseScrollSpeed.Value;
+            float scrollIncrement = ZInput.GetMouseScrollWheel() * 0.6f * mapMouseScrollSpeed.Value;
             if (scrollIncrement != 0)
                 ZoomMap(scrollIncrement);
         }

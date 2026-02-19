@@ -1,3 +1,7 @@
+# 1.4.2
+* fixed mouse scroll speed
+* added mouse scroll speed modifier
+
 # 1.4.1
 * fixed minor issues with pin text generation
 * pins are sorted by type for better layering
