@@ -273,7 +273,7 @@ namespace NomapPrinter
             mapMouseScrollSpeed = config("Map style extended", "Map mouse scroll speed", 1f, "Multiplier of mouse scroll. [Not Synced with Server]", false);
 
             fogContoursEnabled = config("Map style - Fog contours", "Enabled", true, "Enable terrain contours over unexplored fog.");
-            fogContoursDistance = config("Map style - Fog contours", "Distance", 30, "Distance in pixels where terrain contours are drawn over unexplored fog.");
+            fogContoursDistance = config("Map style - Fog contours", "Distance", 24, "Distance in pixels where terrain contours are drawn over unexplored fog.");
             fogContoursAlpha = config("Map style - Fog contours", "Alpha", 0.12f, "Transparency of contours drawn over unexplored fog.");
 
 

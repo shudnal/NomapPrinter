@@ -679,7 +679,9 @@ namespace NomapPrinter
             int ringWindow = Math.Max(1, farWindow - nearWindow);
 
             float ringDensity = (farCount - nearCount) / (float)ringWindow;
-            float proximity = Mathf.Clamp01(ringDensity * 8f);
+
+            float t = Mathf.Clamp01(ringDensity * 5f);
+            float proximity = Mathf.Pow(t, 1.5f);
 
             return contourAlphaMax * proximity;
         }
