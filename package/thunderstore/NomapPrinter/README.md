@@ -7,7 +7,6 @@ This mod was designed to enhance nomap playthroughs for players to look at their
 
 This mod could be handy if you want some map reference for your travels but don't want to draw map yourself.
 
-
 If you don't want this generated map and have your own file you can set its name in "Shared file", change Map storage config to "Load from shared file" and it will be shared to all clients from the server.
 
 File can be set as full qualified name or just file name without path. Latter one should be placed near dll file in any subdirectory.
@@ -24,6 +23,7 @@ Map content will be automatically updated on file change.
 * configurable pins on map
 * pins config is server synced
 * Full gamepad support
+* contours of unexplored terrain on static map (non vanilla versions)
 
 ## Pins default config
 * pins only shows in explored part of the map

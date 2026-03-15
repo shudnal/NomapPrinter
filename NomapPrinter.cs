@@ -17,7 +17,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.4.3";
+        public const string pluginVersion = "1.5.0";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -275,7 +275,6 @@ namespace NomapPrinter
             fogContoursEnabled = config("Map style - Fog contours", "Enabled", true, "Enable terrain contours over unexplored fog.");
             fogContoursDistance = config("Map style - Fog contours", "Distance", 24, "Distance in pixels where terrain contours are drawn over unexplored fog.");
             fogContoursAlpha = config("Map style - Fog contours", "Alpha", 0.12f, "Transparency of contours drawn over unexplored fog.");
-
 
             messageStart = config("Messages", "Drawing begin", "Remembering travels...", "Center message when drawing is started. [Not Synced with Server]", false);
             messageSaving = config("Messages", "Drawing end", "Drawing map...", "Center message when saving file is started. [Not Synced with Server]", false);

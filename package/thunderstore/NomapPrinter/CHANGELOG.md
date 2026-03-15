@@ -1,4 +1,5 @@
-# 1.4.3
+# 1.5.0
+* contours of unexplored terrain
 * reduced freezes on map creation
 
 # 1.4.2
