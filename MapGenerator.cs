@@ -637,7 +637,9 @@ namespace NomapPrinter
             return integral;
         }
 
-        private static bool IsNearExplored(int[] integral, int x, int y, int range)
+        private static bool IsNearExplored(int[] integral, int x, int y, int range) => GetExploredCount(integral, x, y, range) > 0;
+
+        private static int GetExploredCount(int[] integral, int x, int y, int range)
         {
             int size = TextureSize;
             int stride = size + 1;
@@ -656,7 +658,30 @@ namespace NomapPrinter
                              - integral[x2 * stride + y1]
                              + integral[x1 * stride + y1];
 
-            return exploredCount > 0;
+            return exploredCount;
+        }
+
+        private static float GetContourDistanceAlpha(int[] exploredIntegral, int x, int y, int contourDistance, float contourAlphaMax)
+        {
+            int nearRange = Math.Max(1, contourDistance);
+            int farRange = Math.Max(nearRange + 1, contourDistance * 2);
+
+            int nearCount = GetExploredCount(exploredIntegral, x, y, nearRange);
+            if (nearCount > 0)
+                return contourAlphaMax;
+
+            int farCount = GetExploredCount(exploredIntegral, x, y, farRange);
+            if (farCount <= 0)
+                return 0f;
+
+            int nearWindow = (nearRange * 2 + 1) * (nearRange * 2 + 1);
+            int farWindow = (farRange * 2 + 1) * (farRange * 2 + 1);
+            int ringWindow = Math.Max(1, farWindow - nearWindow);
+
+            float ringDensity = (farCount - nearCount) / (float)ringWindow;
+            float proximity = Mathf.Clamp01(ringDensity * 8f);
+
+            return contourAlphaMax * proximity;
         }
 
         private static IEnumerator StylizeFog()
@@ -671,7 +696,7 @@ namespace NomapPrinter
 
             float contourAlphaFactor = Math.Max(0, fogContoursAlpha.Value);
             int contourDistance = Math.Max(0, fogContoursDistance.Value);
-            bool haveContours = contours != null && contourDistance > 0;
+            bool haveContours = fogContoursEnabled.Value && contours != null && contourDistance > 0;
             int[] exploredIntegral = haveContours ? BuildExploredIntegral() : null;
 
             var internalThread = new Thread(() =>
@@ -690,12 +715,13 @@ namespace NomapPrinter
                             else
                                 Result[pos] = new Color32((byte)(yellowMap.r + (fogPix.r - 128)), (byte)(yellowMap.g + (fogPix.g - 128)), (byte)(yellowMap.b + (fogPix.b - 128)), 255);
 
-                            if (haveContours && IsNearExplored(exploredIntegral, x, y, contourDistance))
+                            if (haveContours && IsNearExplored(exploredIntegral, x, y, contourDistance * 2))
                             {
                                 Color32 contourPix = contours[x % contoursRes * contoursRes + y % contoursRes];
                                 if (contourPix.a > 0)
                                 {
-                                    float contourAlpha = (contourPix.a / 255f) * contourAlphaFactor;
+                                    float contourDistanceAlpha = GetContourDistanceAlpha(exploredIntegral, x, y, contourDistance, contourAlphaFactor);
+                                    float contourAlpha = (contourPix.a / 255f) * contourDistanceAlpha;
                                     Result[pos] = Color32.Lerp(Result[pos], contourPix, contourAlpha);
                                     Result[pos].a = 255;
                                 }

@@ -590,7 +590,7 @@ namespace NomapPrinter
 
                 if (haveExploration)
                 {
-                    if (fogContoursDistance.Value > 0)
+                    if (fogContoursEnabled.Value && fogContoursDistance.Value > 0)
                         yield return PrepareFogContours();
                     
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
