@@ -66,6 +66,8 @@ namespace NomapPrinter
         public static ConfigEntry<float> mapGamepadMoveSpeed;
         public static ConfigEntry<float> mapSizeMultiplier;
         public static ConfigEntry<float> mapMouseScrollSpeed;
+        public static ConfigEntry<int> fogContoursDistance;
+        public static ConfigEntry<float> fogContoursAlpha;
 
         public static ConfigEntry<bool> showPins;
         public static ConfigEntry<bool> showExploredPins;
@@ -267,6 +269,8 @@ namespace NomapPrinter
             mapGamepadMoveSpeed = config("Map style extended", "Map gamepad move speed", 1f, "Speed of map move while using gamepad. [Not Synced with Server]", false);
             mapSizeMultiplier = config("Map style extended", "Map size multiplier", 1f, "Use similar multiplier as in EWSize mod. Map size multiplier should also match world radius to get correct results.");
             mapMouseScrollSpeed = config("Map style extended", "Map mouse scroll speed", 1f, "Multiplier of mouse scroll. [Not Synced with Server]", false);
+            fogContoursDistance = config("Map style extended", "Fog contours distance", 32, "Distance in pixels where terrain contours are drawn over unexplored fog.");
+            fogContoursAlpha = config("Map style extended", "Fog contours alpha", 0.2f, "Transparency of contours drawn over unexplored fog.");
 
             messageStart = config("Messages", "Drawing begin", "Remembering travels...", "Center message when drawing is started. [Not Synced with Server]", false);
             messageSaving = config("Messages", "Drawing end", "Drawing map...", "Center message when saving file is started. [Not Synced with Server]", false);

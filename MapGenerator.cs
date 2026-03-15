@@ -75,6 +75,9 @@ namespace NomapPrinter
         private static Color32[] fog;
         private static int fogRes;
 
+        private static Color32[] contours;
+        private static int contoursRes;
+
         public static Color32[] Result
         {
             get
@@ -138,11 +141,19 @@ namespace NomapPrinter
             Heightmap = null;
             Result = null;
             fog = null;
+            contours = null;
         }
 
         public static void SetFogTexture(Texture2D fog)
         {
             SetFogTexture(fog.GetPixels32());
+        }
+
+        public static void SetContoursTexture(Color32[] newContours)
+        {
+            contours = new Color32[newContours.Length];
+            contoursRes = (int)Math.Sqrt(newContours.Length);
+            newContours.CopyTo(contours, 0);
         }
 
         public static void SetFogTexture(Color32[] newFog)
@@ -604,6 +615,50 @@ namespace NomapPrinter
             }
         }
 
+        private static int[] BuildExploredIntegral()
+        {
+            int size = TextureSize;
+            int stride = size + 1;
+            int[] integral = new int[stride * stride];
+
+            for (int x = 1; x <= size; x++)
+            {
+                int rowOffset = x * stride;
+                int prevRowOffset = (x - 1) * stride;
+                int exploredRow = (x - 1) * size;
+
+                for (int y = 1; y <= size; y++)
+                {
+                    int explored = ExploredData[exploredRow + y - 1] ? 1 : 0;
+                    integral[rowOffset + y] = explored + integral[rowOffset + y - 1] + integral[prevRowOffset + y] - integral[prevRowOffset + y - 1];
+                }
+            }
+
+            return integral;
+        }
+
+        private static bool IsNearExplored(int[] integral, int x, int y, int range)
+        {
+            int size = TextureSize;
+            int stride = size + 1;
+            int minX = Math.Max(0, x - range);
+            int maxX = Math.Min(size - 1, x + range);
+            int minY = Math.Max(0, y - range);
+            int maxY = Math.Min(size - 1, y + range);
+
+            int x1 = minX;
+            int y1 = minY;
+            int x2 = maxX + 1;
+            int y2 = maxY + 1;
+
+            int exploredCount = integral[x2 * stride + y2]
+                             - integral[x1 * stride + y2]
+                             - integral[x2 * stride + y1]
+                             + integral[x1 * stride + y1];
+
+            return exploredCount > 0;
+        }
+
         private static IEnumerator StylizeFog()
         {
             bool customFog = fog != null;
@@ -613,6 +668,11 @@ namespace NomapPrinter
                 fog = Result;
                 fogRes = TextureSize;
             }
+
+            float contourAlphaFactor = Math.Max(0, fogContoursAlpha.Value);
+            int contourDistance = Math.Max(0, fogContoursDistance.Value);
+            bool haveContours = contours != null && contourDistance > 0;
+            int[] exploredIntegral = haveContours ? BuildExploredIntegral() : null;
 
             var internalThread = new Thread(() =>
             {
@@ -629,6 +689,17 @@ namespace NomapPrinter
                                 Result[pos] = fogPix;
                             else
                                 Result[pos] = new Color32((byte)(yellowMap.r + (fogPix.r - 128)), (byte)(yellowMap.g + (fogPix.g - 128)), (byte)(yellowMap.b + (fogPix.b - 128)), 255);
+
+                            if (haveContours && IsNearExplored(exploredIntegral, x, y, contourDistance))
+                            {
+                                Color32 contourPix = contours[x % contoursRes * contoursRes + y % contoursRes];
+                                if (contourPix.a > 0)
+                                {
+                                    float contourAlpha = (contourPix.a / 255f) * contourAlphaFactor;
+                                    Result[pos] = Color32.Lerp(Result[pos], contourPix, contourAlpha);
+                                    Result[pos].a = 255;
+                                }
+                            }
                         }
                     }
                 }
@@ -641,7 +712,7 @@ namespace NomapPrinter
             }
         }
 
-        private static IEnumerator GenerateContourMap(Color32[] start, int graduations, byte alpha)
+        public static IEnumerator GenerateContourMap(Color32[] start, int graduations, byte alpha)
         {
             Color32[] input;
             Color32[] output;

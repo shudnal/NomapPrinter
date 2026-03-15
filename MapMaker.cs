@@ -22,7 +22,7 @@ namespace NomapPrinter
             public const int _pixelSize = 6; // original = 12
 
             public const string cacheFileName = "worldData";
-            public const int version = 1;
+            public const int version = 2;
 
             public long worldUID;
 
@@ -33,6 +33,7 @@ namespace NomapPrinter
             public Texture2D m_mapTexture;
             public Texture2D m_forestTexture;
             public Texture2D m_heightmap;
+            public Texture2D m_contoursTexture;
 
             public static int TextureSize
             {
@@ -118,6 +119,19 @@ namespace NomapPrinter
 
                 yield return null;
 
+                yield return MapGenerator.GenerateContourMap(m_heightmapArray, graduationLinesDensity, 128);
+
+                m_contoursTexture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, mipChain: false)
+                {
+                    name = "NomapPrinter_m_contoursTexture",
+                    wrapMode = TextureWrapMode.Clamp
+                };
+
+                m_contoursTexture.SetPixels32(MapGenerator.Result);
+                m_contoursTexture.Apply();
+
+                yield return null;
+
                 threads = null;
 
                 initialized = true;
@@ -193,7 +207,8 @@ namespace NomapPrinter
                 }
 
                 ZPackage zPackage = new ZPackage(data);
-                if (version != zPackage.ReadInt())
+                int cacheVersion = zPackage.ReadInt();
+                if (version != cacheVersion)
                 {
                     LogWarning($"World data ({filename}): Version mismatch");
                     return false;
@@ -222,6 +237,11 @@ namespace NomapPrinter
                         m_heightmap = new Texture2D(2, 2);
 
                     m_heightmap.LoadImage(zPackage.ReadByteArray());
+
+                    if (m_contoursTexture == null)
+                        m_contoursTexture = new Texture2D(2, 2);
+
+                    m_contoursTexture.LoadImage(zPackage.ReadByteArray());
                 }
                 catch (Exception e)
                 {
@@ -245,6 +265,7 @@ namespace NomapPrinter
                 zPackage.Write(m_mapTexture.EncodeToPNG());
                 zPackage.Write(m_forestTexture.EncodeToPNG());
                 zPackage.Write(m_heightmap.EncodeToPNG());
+                zPackage.Write(m_contoursTexture.EncodeToPNG());
 
                 string filename = CacheFile();
 
@@ -263,6 +284,7 @@ namespace NomapPrinter
                 UnityEngine.Object.Destroy(m_mapTexture);
                 UnityEngine.Object.Destroy(m_forestTexture);
                 UnityEngine.Object.Destroy(m_heightmap);
+                UnityEngine.Object.Destroy(m_contoursTexture);
             }
         }
 
@@ -568,6 +590,9 @@ namespace NomapPrinter
 
                 if (haveExploration)
                 {
+                    if (fogContoursDistance.Value > 0)
+                        yield return PrepareFogContours();
+                    
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
                     
                     if (useCustomUnderFogLayer.Value)
@@ -671,6 +696,28 @@ namespace NomapPrinter
             }
 
             LogInfo($"Prepared map data {mapType} for world {worldUID} in {stopwatch.ElapsedMilliseconds,-4:F2} ms");
+        }
+
+        private static IEnumerator PrepareFogContours()
+        {
+            if (worldMapData == null || !worldMapData.initialized || worldMapData.m_heightmap == null)
+                yield return PrepareTerrainData();
+
+            if (worldMapData.m_contoursTexture == null)
+            {
+                yield return MapGenerator.GenerateContourMap(worldMapData.m_heightmap.GetPixels32(), graduationLinesDensity, 128);
+
+                worldMapData.m_contoursTexture = new Texture2D(WorldMapData.TextureSize, WorldMapData.TextureSize, TextureFormat.RGBA32, mipChain: false)
+                {
+                    name = "NomapPrinter_m_contoursTexture",
+                    wrapMode = TextureWrapMode.Clamp
+                };
+
+                worldMapData.m_contoursTexture.SetPixels32(MapGenerator.Result);
+                worldMapData.m_contoursTexture.Apply();
+            }
+
+            MapGenerator.SetContoursTexture(worldMapData.m_contoursTexture.GetPixels32());
         }
 
         private static bool GetPlayerExploration(Player player, long worldUID)
