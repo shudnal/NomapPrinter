@@ -575,6 +575,9 @@ namespace NomapPrinter
                     SetMapIsReady();
                 else if (mapStorage.Value == MapStorage.Character)
                     MapMaker.PregenerateMap();
+                
+                if (mapStorage.Value == MapStorage.LocalFolder)
+                    MapMaker.PreloadExploredMap();
             }
         }
 

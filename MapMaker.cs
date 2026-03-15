@@ -505,6 +505,19 @@ namespace NomapPrinter
             instance.StartCoroutine(CreateMap(pregeneration: true));
         }
 
+        public static void PreloadExploredMap()
+        {
+            worldUID = ZNet.instance.GetWorldUID();
+
+            exploredMapData ??= new ExploredMapData();
+
+            if (mapType.Value == MapType.Vanilla)
+                return;
+
+            if (exploredMapData.LoadExploredMap())
+                LogInfo($"Preloaded map data for world {worldUID} {ZNet.instance.GetWorldName()}");
+        }
+
         private static string CacheDirectory()
         {
             Directory.CreateDirectory(cacheDirectory);
@@ -556,7 +569,7 @@ namespace NomapPrinter
                 if (haveExploration)
                 {
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
-
+                    
                     if (useCustomUnderFogLayer.Value)
                         yield return OverlayMarkingsLayer(overFog: false);
 
