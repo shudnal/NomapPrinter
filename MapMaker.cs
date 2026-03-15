@@ -562,7 +562,7 @@ namespace NomapPrinter
 
                     if (useCustomFogLayer.Value)
                         OverrideFogTexture();
-
+                   
                     yield return MapGenerator.OverlayExplorationFog(exploration);
 
                     if (useCustomOverFogLayer.Value)
@@ -957,12 +957,39 @@ namespace NomapPrinter
 
             if (showPins.Value)
                 yield return AddPinsOnMap(map, mapResolution);
-
-            mapTexture.Reinitialize(mapResolution, mapResolution, TextureFormat.RGB24, false);
-            mapTexture.SetPixels32(map);
-            mapTexture.Apply(false);
+            
+            yield return ApplyMapTextureStriped(map, mapResolution);
 
             MapViewer.SetMapIsReady();
+        }
+
+        private static Color32[] stripeBuffer;
+
+        private static IEnumerator ApplyMapTextureStriped(Color32[] map, int mapResolution)
+        {
+            const int rowsPerStripe = 64;
+
+            if (mapTexture.width != mapResolution || mapTexture.height != mapResolution)
+                mapTexture.Reinitialize(mapResolution, mapResolution, TextureFormat.RGB24, false);
+
+            int pixelsPerStripe = mapResolution * rowsPerStripe;
+            int stripeCount = mapResolution / rowsPerStripe;
+
+            if (stripeBuffer == null || stripeBuffer.Length != pixelsPerStripe)
+                stripeBuffer = new Color32[pixelsPerStripe];
+
+            for (int stripeIndex = 0; stripeIndex < stripeCount; stripeIndex++)
+            {
+                int y = stripeIndex * rowsPerStripe;
+                int sourceOffset = y * mapResolution;
+
+                Array.Copy(map, sourceOffset, stripeBuffer, 0, pixelsPerStripe);
+                mapTexture.SetPixels32(0, y, mapResolution, rowsPerStripe, stripeBuffer);
+
+                yield return null;
+            }
+
+            mapTexture.Apply(false);
         }
 
         private static void OverrideFogTexture()
@@ -1111,7 +1138,7 @@ namespace NomapPrinter
                     doublemap[(row * 2 + 1) * mapSize + col * 2 + 1] = pix;
                 }
 
-                if (row % 100 == 0)
+                if (row % 64 == 0)
                     yield return null;
             }
         }

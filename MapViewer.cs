@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using BepInEx;
+using HarmonyLib;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using static NomapPrinter.NomapPrinter;
-using BepInEx;
-using HarmonyLib;
-using System.IO;
 
 namespace NomapPrinter
 {
@@ -17,6 +17,7 @@ namespace NomapPrinter
         public static GameObject mapContent;
         public static RectTransform content;
         public static RectTransform viewport;
+        public static Image mapImage;
 
         public static Texture2D mapTexture = MapMaker.mapTexture;
         private static bool mapTextureIsReady = false;
@@ -319,8 +320,7 @@ namespace NomapPrinter
                 return;
 
             content.sizeDelta = new Vector2(mapTexture.width, mapTexture.height);
-            mapContent.GetComponent<Image>().sprite = Sprite.Create(mapTexture, new Rect(0, 0, mapTexture.width, mapTexture.height), Vector2.zero);
-
+            InitMapSprite();
             ZoomMap(0);
             CenterMap();
         }
@@ -393,9 +393,9 @@ namespace NomapPrinter
             ZoomMap(0);
 
             // Map image component
-            Image mapImage = mapContent.AddComponent<Image>();
-            mapImage.sprite = Sprite.Create(mapTexture, new Rect(0, 0, mapTexture.width, mapTexture.height), Vector2.zero);
+            mapImage = mapContent.AddComponent<Image>();
             mapImage.preserveAspect = true;
+            InitMapSprite();
 
             // Scroll rect settings
             svScrollRect.scrollSensitivity = 0;
@@ -411,6 +411,17 @@ namespace NomapPrinter
             parentObject.SetActive(false);
 
             LogInfo("Ingame drawed map added to hud");
+        }
+
+        private static void InitMapSprite()
+        {
+            if (!mapImage.sprite || mapImage.sprite.rect.width != mapTexture.width)
+            {
+                if (mapImage.sprite)
+                    UnityEngine.Object.Destroy(mapImage.sprite);
+
+                mapImage.sprite = Sprite.Create(mapTexture, new Rect(0, 0, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            }
         }
 
         private static void MapFileChanged(object sender, FileSystemEventArgs eargs)
