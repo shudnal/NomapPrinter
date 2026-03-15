@@ -1,3 +1,6 @@
+# 1.4.3
+* reduced freezes on map creation
+
 # 1.4.2
 * fixed mouse scroll speed
 * added mouse scroll speed modifier
