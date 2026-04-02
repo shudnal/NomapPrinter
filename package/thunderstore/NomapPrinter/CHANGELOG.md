@@ -1,3 +1,6 @@
+# 1.5.1
+* new config to keep map position and scale when map is refreshed
+
 # 1.5.0
 * contours of unexplored terrain
 * reduced freezes on map creation

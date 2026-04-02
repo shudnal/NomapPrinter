@@ -274,7 +274,7 @@ namespace NomapPrinter
         {
             if (increment.Equals(0))
             {
-                content.localScale = Vector3.one;
+                ResetZoomToDefault();
                 return;
             }
 
@@ -282,8 +282,7 @@ namespace NomapPrinter
                 return;
 
             float scaleIncrement = increment / 2;
-            float minScale = Mathf.Max(mapMinimumScale.Value, mapSize.Value == MapSize.Normal ? 0.4f: 0.25f);
-            float maxScale = Mathf.Min(mapMaximumScale.Value, 2f);
+            (float minScale, float maxScale) = GetScaleLimits();
 
             float scale = Mathf.Clamp(content.localScale.x + scaleIncrement, minScale, maxScale);
             
@@ -301,7 +300,28 @@ namespace NomapPrinter
                     content.localPosition -= new Vector3(relativeMousePosition.x, relativeMousePosition.y) * scaleIncrement;
                 }
             }
-        } 
+        }
+
+        private static (float minScale, float maxScale) GetScaleLimits()
+        {
+            float minScale = Mathf.Max(mapMinimumScale.Value, mapSize.Value == MapSize.Normal ? 0.4f : 0.25f);
+            float maxScale = Mathf.Min(mapMaximumScale.Value, 2f);
+
+            if (minScale > maxScale)
+            {
+                LogWarning($"Map zoom limits are conflicting (min: {minScale}, max: {maxScale}). Values were swapped.");
+                (minScale, maxScale) = (maxScale, minScale);
+            }
+
+            return (minScale, maxScale);
+        }
+
+        private static void ResetZoomToDefault()
+        {
+            (float minScale, float maxScale) = GetScaleLimits();
+            float defaultScale = Mathf.Clamp(mapDefaultScale.Value, minScale, maxScale);
+            content.localScale = new Vector3(defaultScale, defaultScale, 1f);
+        }
 
         private static void CenterMap()
         {
@@ -319,10 +339,24 @@ namespace NomapPrinter
             if (!mapWindowInitialized)
                 return;
 
+            float previousScale = content.localScale.x;
+            Vector3 previousPosition = content.localPosition;
+
             content.sizeDelta = new Vector2(mapTexture.width, mapTexture.height);
             InitMapSprite();
-            ZoomMap(0);
-            CenterMap();
+
+            if (retainMapFocusAndScale.Value)
+            {
+                (float minScale, float maxScale) = GetScaleLimits();
+                float restoredScale = Mathf.Clamp(previousScale, minScale, maxScale);
+                content.localScale = new Vector3(restoredScale, restoredScale, 1f);
+                content.localPosition = previousPosition;
+            }
+            else
+            {
+                ResetZoomToDefault();
+                CenterMap();
+            }
         }
 
         private static void AddIngameView(Transform parentTransform)
@@ -390,7 +424,7 @@ namespace NomapPrinter
             content.sizeDelta = new Vector2(mapTexture.width, mapTexture.height);
             content.anchoredPosition = Vector2.zero;
 
-            ZoomMap(0);
+            ResetZoomToDefault();
 
             // Map image component
             mapImage = mapContent.AddComponent<Image>();

@@ -17,7 +17,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.0";
+        public const string pluginVersion = "1.5.1";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -58,6 +58,7 @@ namespace NomapPrinter
         public static ConfigEntry<float> mapDefaultScale;
         public static ConfigEntry<float> mapMinimumScale;
         public static ConfigEntry<float> mapMaximumScale;
+        public static ConfigEntry<bool> retainMapFocusAndScale;
 
         public static ConfigEntry<float> pinScale;
         public static ConfigEntry<bool> preserveSharedMapFog;
@@ -263,6 +264,7 @@ namespace NomapPrinter
             mapDefaultScale = config("Map style", "Map zoom default scale", 0.7f, "Default scale of opened map, more is closer, less is farther.");
             mapMinimumScale = config("Map style", "Map zoom minimum scale", 0.25f, "Minimum scale of opened map, more is closer, less is farther.");
             mapMaximumScale = config("Map style", "Map zoom maximum scale", 2.0f, "Maximum scale of opened map, more is closer, less is farther.");
+            retainMapFocusAndScale = config("Map style", "Retain map focus and scale", true, "Retain current map position and scale when map texture is refreshed.");
 
             pinScale = config("Map style extended", "Pin scale", 1.0f, "Pin scale");
             preserveSharedMapFog = config("Map style extended", "Preserve shared map fog tint for vanilla map", true, "Generate Vanilla map with shared map fog tint");
