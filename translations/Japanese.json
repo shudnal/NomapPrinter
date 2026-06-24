@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "旅を思い出しています…",
+    "nomapprinter_saving": "地図を描画中…",
+    "nomapprinter_ready": "地図の準備ができました",
+    "nomapprinter_savedto": "地図の保存先",
+    "nomapprinter_notready": "地図はまだ描画されていません",
+    "nomapprinter_notenoughbasepieces": "拠点の建築物が不足しています",
+    "nomapprinter_notenoughcomfort": "快適度が不足しています"
+}

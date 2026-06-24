@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Utazások felidézése...",
+    "nomapprinter_saving": "Térkép rajzolása...",
+    "nomapprinter_ready": "A térkép elkészült",
+    "nomapprinter_savedto": "A térkép mentési helye",
+    "nomapprinter_notready": "A térkép még nincs megrajzolva",
+    "nomapprinter_notenoughbasepieces": "Nincs elég építőelem a bázison",
+    "nomapprinter_notenoughcomfort": "Nincs elég komfort"
+}

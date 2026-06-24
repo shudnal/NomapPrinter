@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Matkoja muistellaan...",
+    "nomapprinter_saving": "Karttaa piirretään...",
+    "nomapprinter_ready": "Kartta on valmis",
+    "nomapprinter_savedto": "Kartta tallennettu kohteeseen",
+    "nomapprinter_notready": "Karttaa ei ole vielä piirretty",
+    "nomapprinter_notenoughbasepieces": "Tukikohdassa ei ole tarpeeksi rakennusosia",
+    "nomapprinter_notenoughcomfort": "Mukavuus ei riitä"
+}

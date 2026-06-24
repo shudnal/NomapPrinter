@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Сеќавање на патувањата...",
+    "nomapprinter_saving": "Мапата се црта...",
+    "nomapprinter_ready": "Мапата е подготвена",
+    "nomapprinter_savedto": "Мапата е зачувана во",
+    "nomapprinter_notready": "Мапата сè уште не е нацртана",
+    "nomapprinter_notenoughbasepieces": "Нема доволно делови од базата",
+    "nomapprinter_notenoughcomfort": "Недоволна удобност"
+}

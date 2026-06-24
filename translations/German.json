@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Reisen werden in Erinnerung gerufen...",
+    "nomapprinter_saving": "Karte wird gezeichnet...",
+    "nomapprinter_ready": "Karte ist bereit",
+    "nomapprinter_savedto": "Karte gespeichert unter",
+    "nomapprinter_notready": "Karte wurde noch nicht gezeichnet",
+    "nomapprinter_notenoughbasepieces": "Nicht genügend Bauteile in der Basis",
+    "nomapprinter_notenoughcomfort": "Nicht genügend Komfort"
+}

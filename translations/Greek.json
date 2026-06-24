@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Αναπολώντας τα ταξίδια...",
+    "nomapprinter_saving": "Σχεδίαση χάρτη...",
+    "nomapprinter_ready": "Ο χάρτης είναι έτοιμος",
+    "nomapprinter_savedto": "Ο χάρτης αποθηκεύτηκε στο",
+    "nomapprinter_notready": "Ο χάρτης δεν έχει σχεδιαστεί ακόμη",
+    "nomapprinter_notenoughbasepieces": "Δεν υπάρχουν αρκετά δομικά τμήματα στη βάση",
+    "nomapprinter_notenoughcomfort": "Ανεπαρκής άνεση"
+}

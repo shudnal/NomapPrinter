@@ -567,19 +567,19 @@ namespace NomapPrinter
                 // Vanilla map does not need pregeneration
                 if (!pregeneration)
                 {
-                    ShowMessage(messageStart.Value);
+                    ShowMessage("$nomapprinter_start");
                     yield return GetVanillaMap(2048 * (int)mapSize.Value, haveExploration);
                 }
             }
             else
             {
-                if (!pregeneration) ShowMessage(messageStart.Value);
+                if (!pregeneration) ShowMessage("$nomapprinter_start");
 
                 if (!exploredMapData.LoadExploredMap())
                 {
                     yield return PrepareTerrainData();
 
-                    if (!pregeneration) ShowMessage(messageSaving.Value);
+                    if (!pregeneration) ShowMessage("$nomapprinter_saving");
 
                     yield return MapGenerator.Initialize();
 
@@ -614,7 +614,7 @@ namespace NomapPrinter
 
                     yield return ApplyMapTexture(MapGenerator.Result);
 
-                    ShowMessage(messageReady.Value);
+                    ShowMessage("$nomapprinter_ready");
                 }
 
                 MapGenerator.DeInitializeTextures();
@@ -626,7 +626,7 @@ namespace NomapPrinter
 
                 if (filename.IsNullOrWhiteSpace())
                 {
-                    filename = Path.Combine(localPath, "screenshots", $"{mapType.Value}.{ZNet.instance.GetWorldName()}.png");
+                    filename = Path.Combine(LocalPath, "screenshots", $"{mapType.Value}.{ZNet.instance.GetWorldName()}.png");
                 }
                 else
                 {
@@ -650,7 +650,7 @@ namespace NomapPrinter
                     yield return null;
                 }
 
-                ShowMessage($"{messageSavedTo.Value} {filepath}", MessageHud.MessageType.TopLeft);
+                ShowMessage($"$nomapprinter_savedto {filepath}", MessageHud.MessageType.TopLeft);
             }
 
             LogInfo("Finished Map Draw");
@@ -951,7 +951,7 @@ namespace NomapPrinter
 
             });
 
-            ShowMessage(messageSaving.Value);
+            ShowMessage("$nomapprinter_saving");
 
             internalThread.Start();
             while (internalThread.IsAlive == true)

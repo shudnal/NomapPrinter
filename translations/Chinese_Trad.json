@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "回憶旅程中……",
+    "nomapprinter_saving": "正在繪製地圖……",
+    "nomapprinter_ready": "地圖已就緒",
+    "nomapprinter_savedto": "地圖已儲存至",
+    "nomapprinter_notready": "地圖尚未繪製",
+    "nomapprinter_notenoughbasepieces": "基地建築數量不足",
+    "nomapprinter_notenoughcomfort": "舒適度不足"
+}

@@ -75,14 +75,13 @@ namespace NomapPrinter
                 if (value && showMapBasePiecesRequirement.Value > 0 && Player.m_localPlayer.GetBaseValue() < showMapBasePiecesRequirement.Value)
                 {
                     value = false;
-                    ShowMessage(String.Format(messageNotEnoughBasePieces.Value, Player.m_localPlayer.GetBaseValue(), showMapBasePiecesRequirement.Value));
+                    ShowMessage($"$nomapprinter_notenoughbasepieces: {Player.m_localPlayer.GetBaseValue()}/{showMapBasePiecesRequirement.Value}");
                 }
-
 
                 if (value && showMapComfortRequirement.Value > 0 && Player.m_localPlayer.GetComfortLevel() < showMapComfortRequirement.Value)
                 {
                     value = false;
-                    ShowMessage(String.Format(messageNotEnoughComfort.Value, Player.m_localPlayer.GetComfortLevel(), showMapComfortRequirement.Value));
+                    ShowMessage($"$nomapprinter_notenoughcomfort: {Player.m_localPlayer.GetComfortLevel()}/{showMapComfortRequirement.Value}");
                 }
 
                 _displayingWindow = value;
@@ -198,7 +197,7 @@ namespace NomapPrinter
         public static void ShowMap()
         {
             if (!IsMapReady())
-                ShowMessage(messageNotReady.Value);
+                ShowMessage("$nomapprinter_notready");
             else
                 DisplayingWindow = true;
         }
@@ -224,11 +223,8 @@ namespace NomapPrinter
             if (sharedFile.Value.IsNullOrWhiteSpace())
                 return;
 
-            if (fileSystemWatcher != null)
-            {
-                fileSystemWatcher.Dispose();
-                fileSystemWatcher = null;
-            }
+            fileSystemWatcher?.Dispose();
+            fileSystemWatcher = null;
 
             fileSystemWatcher = new FileSystemWatcher()
             {
@@ -483,7 +479,7 @@ namespace NomapPrinter
                 LogInfo($"Can't find file ({filename})!");
             }
 
-            mapDataFromFile.AssignValueSafe(fileData);
+            mapDataFromFile.AssignLocalValue(fileData);
         }
 
         private static void LoadMapFromSharedValue()
@@ -528,7 +524,7 @@ namespace NomapPrinter
             string worldName = SanitizeFilePart(ZNet.instance?.GetWorldName(), "UnknownWorld");
             string folderName = localFolder.Value.IsNullOrWhiteSpace() ? pluginID : localFolder.Value;
 
-            return Path.Combine(localPath, folderName, $"{pluginID}.{playerName}.{worldName}.png");
+            return Path.Combine(LocalPath, folderName, $"{pluginID}.{playerName}.{worldName}.png");
         }
 
         private static bool LoadMapFromLocalFile(Player player)

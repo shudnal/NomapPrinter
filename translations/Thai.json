@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "กำลังรำลึกถึงการเดินทาง...",
+    "nomapprinter_saving": "กำลังวาดแผนที่...",
+    "nomapprinter_ready": "แผนที่พร้อมแล้ว",
+    "nomapprinter_savedto": "บันทึกแผนที่ไปยัง",
+    "nomapprinter_notready": "ยังไม่ได้วาดแผนที่",
+    "nomapprinter_notenoughbasepieces": "ชิ้นส่วนสิ่งปลูกสร้างในฐานไม่เพียงพอ",
+    "nomapprinter_notenoughcomfort": "ค่าความสบายไม่เพียงพอ"
+}

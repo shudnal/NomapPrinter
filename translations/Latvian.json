@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Ceļojumu atsaukšana atmiņā...",
+    "nomapprinter_saving": "Kartes zīmēšana...",
+    "nomapprinter_ready": "Karte ir gatava",
+    "nomapprinter_savedto": "Karte saglabāta vietā",
+    "nomapprinter_notready": "Karte vēl nav uzzīmēta",
+    "nomapprinter_notenoughbasepieces": "Bāzē nepietiek būvdaļu",
+    "nomapprinter_notenoughcomfort": "Nepietiek komforta"
+}

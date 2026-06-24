@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Recordando los viajes...",
+    "nomapprinter_saving": "Dibujando el mapa...",
+    "nomapprinter_ready": "El mapa está listo",
+    "nomapprinter_savedto": "Mapa guardado en",
+    "nomapprinter_notready": "El mapa aún no se ha dibujado",
+    "nomapprinter_notenoughbasepieces": "No hay suficientes piezas en la base",
+    "nomapprinter_notenoughcomfort": "Comodidad insuficiente"
+}

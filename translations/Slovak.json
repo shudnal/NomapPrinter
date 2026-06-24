@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Spomínanie na cesty...",
+    "nomapprinter_saving": "Kreslenie mapy...",
+    "nomapprinter_ready": "Mapa je pripravená",
+    "nomapprinter_savedto": "Mapa uložená do",
+    "nomapprinter_notready": "Mapa ešte nebola nakreslená",
+    "nomapprinter_notenoughbasepieces": "Nedostatok stavebných dielov základne",
+    "nomapprinter_notenoughcomfort": "Nedostatok pohodlia"
+}

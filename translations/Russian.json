@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Вспоминаем путешествия...",
+    "nomapprinter_saving": "Рисуем карту...",
+    "nomapprinter_ready": "Карта готова",
+    "nomapprinter_savedto": "Карта сохранена в",
+    "nomapprinter_notready": "Карта ещё не нарисована",
+    "nomapprinter_notenoughbasepieces": "Недостаточно построек базы",
+    "nomapprinter_notenoughcomfort": "Недостаточно комфорта"
+}

@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Minns resorna...",
+    "nomapprinter_saving": "Ritar kartan...",
+    "nomapprinter_ready": "Kartan är klar",
+    "nomapprinter_savedto": "Kartan sparad i",
+    "nomapprinter_notready": "Kartan är inte ritad än",
+    "nomapprinter_notenoughbasepieces": "Inte tillräckligt med basdelar",
+    "nomapprinter_notenoughcomfort": "Inte tillräckligt med komfort"
+}

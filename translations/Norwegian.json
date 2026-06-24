@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Minnes reisene...",
+    "nomapprinter_saving": "Tegner kartet...",
+    "nomapprinter_ready": "Kartet er klart",
+    "nomapprinter_savedto": "Kartet er lagret i",
+    "nomapprinter_notready": "Kartet er ikke tegnet ennå",
+    "nomapprinter_notenoughbasepieces": "Ikke nok bygningsdeler i basen",
+    "nomapprinter_notenoughcomfort": "Ikke nok komfort"
+}

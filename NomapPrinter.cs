@@ -2,7 +2,7 @@
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
-using ServerSync;
+using ConditionalConfigSync;
 using System;
 using System.IO;
 using System.Linq;
@@ -12,12 +12,13 @@ using static Terminal;
 namespace NomapPrinter
 {
     [BepInDependency(epicLootGUID, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("_shudnal.ConditionalConfigSync", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
     public class NomapPrinter : BaseUnityPlugin
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.1";
+        public const string pluginVersion = "1.5.2";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -109,14 +110,6 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showPinEpicLoot;
         public static ConfigEntry<bool> showLastDeathPin;
 
-        public static ConfigEntry<string> messageStart;
-        public static ConfigEntry<string> messageSaving;
-        public static ConfigEntry<string> messageReady;
-        public static ConfigEntry<string> messageSavedTo;
-        public static ConfigEntry<string> messageNotReady;
-        public static ConfigEntry<string> messageNotEnoughBasePieces;
-        public static ConfigEntry<string> messageNotEnoughComfort;
-
         public static ConfigEntry<bool> tablePartsSwap;
 
         public static readonly CustomSyncedValue<string> mapDataFromFile = new CustomSyncedValue<string>(configSync, "mapDataFromFile", "");
@@ -129,7 +122,7 @@ namespace NomapPrinter
         public static NomapPrinter instance;
 
         private static string _localPath = null;
-        public static string localPath => _localPath ??= Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
+        public static string LocalPath => _localPath ??= Utils.GetSaveDataPath(FileHelpers.FileSource.Local);
         public static string cacheDirectory;
         public static string configDirectory;
 
@@ -207,10 +200,8 @@ namespace NomapPrinter
 
         private void ConfigInit()
         {
-            config("General", "NexusID", 2505, "Nexus mod ID for updates", false);
-
-            modEnabled = config("General", "Enabled", true, "Print map on table interaction");
-            configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
+            modEnabled = serverConfig("General", "Enabled", true, "Print map on table interaction");
+            configLocked = serverConfig("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
 
             loggingEnabled = config("Logging", "Enabled", false, "Enable logging. [Not Synced with Server]", false);
 
@@ -219,19 +210,19 @@ namespace NomapPrinter
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
             preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
 
-            useCustomExploredLayer = config("Map custom layers", "Explored map - Enable layer", false, "Use custom explored map layer if it was found in config folder or shared from server");
-            syncExploredLayerFromServer = config("Map custom layers", "Explored map - Share from server", false, "Share explored map layer from server to clients. " +
+            useCustomExploredLayer = serverConfig("Map custom layers", "Explored map - Enable layer", false, "Use custom explored map layer if it was found in config folder or shared from server");
+            syncExploredLayerFromServer = serverConfig("Map custom layers", "Explored map - Share from server", false, "Share explored map layer from server to clients. " +
                                                                                                                                      "\nFile with size more than 7MB will most likely not be loaded with default data rate of 150KB/s." +
                                                                                                                                      "\nSafest way is to share explored world as packed file and place it into mod config folder on the clients");
 
-            useCustomUnderFogLayer = config("Map custom layers", "Under fog - Enable layer", false, "Use custom under fog map layer if it was found in config folder or shared from server");
-            syncUnderFogLayerFromServer = config("Map custom layers", "Under fog - Share from server", false, "Enable server to clients sharing of layer data");
+            useCustomUnderFogLayer = serverConfig("Map custom layers", "Under fog - Enable layer", false, "Use custom under fog map layer if it was found in config folder or shared from server");
+            syncUnderFogLayerFromServer = serverConfig("Map custom layers", "Under fog - Share from server", false, "Enable server to clients sharing of layer data");
             
-            useCustomOverFogLayer = config("Map custom layers", "Over fog - Enable layer", false, "Use custom over fog map layer if it was found in config folder or shared from server");
-            syncOverFogLayerFromServer = config("Map custom layers", "Over fog - Share from server", false, "Enable server to clients sharing of layer data");
+            useCustomOverFogLayer = serverConfig("Map custom layers", "Over fog - Enable layer", false, "Use custom over fog map layer if it was found in config folder or shared from server");
+            syncOverFogLayerFromServer = serverConfig("Map custom layers", "Over fog - Share from server", false, "Enable server to clients sharing of layer data");
 
-            useCustomFogLayer = config("Map custom layers", "Fog texture - Enable layer", false, "Use custom fog texture if it was found in config folder or shared from server");
-            syncFogLayerFromServer = config("Map custom layers", "Fog texture - Share from server", false, "Enable server to clients sharing of fog texture");
+            useCustomFogLayer = serverConfig("Map custom layers", "Fog texture - Enable layer", false, "Use custom fog texture if it was found in config folder or shared from server");
+            syncFogLayerFromServer = serverConfig("Map custom layers", "Fog texture - Share from server", false, "Enable server to clients sharing of fog texture");
 
             useCustomExploredLayer.SettingChanged += (sender, args) => ReadTextureFiles();
             useCustomUnderFogLayer.SettingChanged += (sender, args) => ReadTextureFiles();
@@ -253,7 +244,7 @@ namespace NomapPrinter
             filePath = config("Map save", "Save to file path", "", "File path used to save generated map. [Not Synced with Server]", false);
 
             mapStorage = config("Map storage", "Data storage", MapStorage.LocalFolder, "Type of storage for map data. Default is save map data to local folder.");
-            localFolder = config("Map storage", "Local folder", "", "Save and load map data from local folder. If relative path is set then the folder will be created at ...\\AppData\\LocalLow\\IronGate\\Valheim");
+            localFolder = config("Map storage", "Local folder", "", "Save and load map data from local folder. If relative path is set then the folder will be created at %appdata%..\\..\\LocalLow\\IronGate\\Valheim");
             sharedFile = config("Map storage", "Shared file", "", "Load map from the file name instead of generating one. File should be available on the server.");
 
             mapStorage.SettingChanged += (sender, args) => MapViewer.SetupSharedMapFileWatcher();
@@ -278,13 +269,6 @@ namespace NomapPrinter
             fogContoursDistance = config("Map style - Fog contours", "Distance", 24, "Distance in pixels where terrain contours are drawn over unexplored fog.");
             fogContoursAlpha = config("Map style - Fog contours", "Alpha", 0.12f, "Transparency of contours drawn over unexplored fog.");
 
-            messageStart = config("Messages", "Drawing begin", "Remembering travels...", "Center message when drawing is started. [Not Synced with Server]", false);
-            messageSaving = config("Messages", "Drawing end", "Drawing map...", "Center message when saving file is started. [Not Synced with Server]", false);
-            messageReady = config("Messages", "Saved", "Map is ready", "Center message when file is saved. [Not Synced with Server]", false);
-            messageSavedTo = config("Messages", "Saved to", "Map saved to", "Top left message with file name. [Not Synced with Server]", false);
-            messageNotReady = config("Messages", "Not ready", "Map is not drawn yet", "Center message on trying to open a not ready map. [Not Synced with Server]", false);
-            messageNotEnoughBasePieces = config("Messages", "Not enough base pieces", "Not enough base pieces ({0} of {1})", "Center message on trying to open a map with failed base pieces requirement check. [Not Synced with Server]", false);
-            messageNotEnoughComfort = config("Messages", "Not enough comfort", "Not enough comfort ({0} of {1})", "Center message on trying to open a map with failed comfort requirement check. [Not Synced with Server]", false);
 
             showPins = config("Pins", "Show map pins", true, "Show pins on drawed map");
             showExploredPins = config("Pins", "Show only explored pins", true, "Only show pins on explored part of the map");
@@ -332,6 +316,8 @@ namespace NomapPrinter
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
 
             InitTerminalCommands();
+
+            StartCoroutine(LocalizationManager.Localizer.Load());
         }
 
         public void InitTerminalCommands()
@@ -358,15 +344,17 @@ namespace NomapPrinter
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
         {
-            ConfigEntry<T> configEntry = Config.Bind(group, name, defaultValue, description);
+            return configSync.AddConfigEntry(Config, group, name, defaultValue, description, syncMode: ConfigSyncMode.Conditional, synchronizedSetting).SourceConfig;
+        }
 
-            SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
-            syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
-
-            return configEntry;
+        ConfigEntry<T> serverConfig<T>(string group, string name, T defaultValue, ConfigDescription description)
+        {
+            return configSync.AddConfigEntry(Config, group, name, defaultValue, description, syncMode: ConfigSyncMode.AlwaysServerControlled, serverControlledByDefault: true).SourceConfig;
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true) => config(group, name, defaultValue, new ConfigDescription(description), synchronizedSetting);
+
+        ConfigEntry<T> serverConfig<T>(string group, string name, T defaultValue, string description) => serverConfig(group, name, defaultValue, new ConfigDescription(description));
 
         public static void LogInfo(object message)
         {
@@ -415,10 +403,10 @@ namespace NomapPrinter
 
         private static void ClearCustomTextures()
         {
-            customLayerExplored.AssignValueSafe("");
-            customLayerFog.AssignValueSafe("");
-            customLayerUnderfog.AssignValueSafe("");
-            customLayerOverfog.AssignValueSafe("");
+            customLayerExplored.AssignLocalValue("");
+            customLayerFog.AssignLocalValue("");
+            customLayerUnderfog.AssignLocalValue("");
+            customLayerOverfog.AssignLocalValue("");
         }
 
         private static void ReadTextureFiles(bool initial = false)
@@ -451,11 +439,11 @@ namespace NomapPrinter
                 return;
 
             if (content == "")
-                syncedValue.AssignValueIfChanged(content);
+                syncedValue.AssignLocalValue(content);
             else if (initial)
-                syncedValue.AssignValueSafe(content);
+                syncedValue.AssignLocalValueAndNotify(content);
             else
-                syncedValue.AssignValueIfChanged(content);
+                syncedValue.AssignLocalValueIfChanged(content);
         }
 
         [HarmonyPatch(typeof(MapTable), nameof(MapTable.OnRead), new Type[] { typeof(Switch), typeof(Humanoid), typeof(ItemDrop.ItemData), typeof(bool) })]

@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Присећање путовања...",
+    "nomapprinter_saving": "Цртање мапе...",
+    "nomapprinter_ready": "Мапа је спремна",
+    "nomapprinter_savedto": "Мапа је сачувана у",
+    "nomapprinter_notready": "Мапа још није нацртана",
+    "nomapprinter_notenoughbasepieces": "Нема довољно делова базе",
+    "nomapprinter_notenoughcomfort": "Недовољно удобности"
+}

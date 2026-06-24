@@ -1,27 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<Target Name="ILRepacker" AfterTargets="Build">
-		<ItemGroup>
-			<InputAssemblies Include="$(TargetPath)" />
-			<InputAssemblies Include="$(OutputPath)\ServerSync.dll" />
-		</ItemGroup>
-		<ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)" />
-	</Target>
-	<Target Name="CopyDLLPackage" AfterTargets="ILRepacker">
+
+	<Target Name="CopyDLLThunderstore" AfterTargets="Build">
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ProjectDir)package\thunderstore\$(SolutionName)\" />
 		<Message Text="Copied to thunderstore package folder." Importance="High" />
 	</Target>
-	<Target Name="ZipOutputPath" AfterTargets="CopyDLLPackage">
+	<Target Name="UpdateTranslations" AfterTargets="CopyDLLThunderstore">
+		<Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File &quot;UpdateTranslations.ps1&quot;" />
+		<Message Text="Updated embedded translations." Importance="High" />
+	</Target>
+	<Target Name="CopyLanguageFileThunderstore" AfterTargets="UpdateTranslations">
+		<Copy SourceFiles="$(ProjectDir)translations\English.json" DestinationFiles="$(ProjectDir)package\thunderstore\$(SolutionName)\Nomap Printer.English.json" />
+		<Message Text="Copied English.json to thunderstore package folder." Importance="High" />
+	</Target>
+	<Target Name="ZipThunderstore" AfterTargets="CopyDLLThunderstore">
 		<ZipDirectory
 				SourceDirectory="$(ProjectDir)package\thunderstore\$(SolutionName)\"
 				DestinationFile="$(ProjectDir)package\thunderstore\$(SolutionName).zip"
 				Overwrite="true"/>
 	</Target>
-	<Target Name="CopyDLLPlugins" AfterTargets="ILRepacker">
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="F:\Steam\steamapps\common\Valheim\BepInEx\plugins\" />
-		<Message Text="Copied to plugins folder." Importance="High" />
-	</Target>
-	<Target Name="CopyR2Plugins" AfterTargets="ILRepacker">
+	<Target Name="CopyDLLPlugins" AfterTargets="CopyDLLThunderstore">
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="D:\r2modman\Valheim\profiles\beta\BepInEx\plugins\shudnal-$(SolutionName)\" />
 		<Message Text="Copied to r2 folder." Importance="High" />
 	</Target>

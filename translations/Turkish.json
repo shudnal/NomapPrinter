@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Yolculuklar hatırlanıyor...",
+    "nomapprinter_saving": "Harita çiziliyor...",
+    "nomapprinter_ready": "Harita hazır",
+    "nomapprinter_savedto": "Harita şuraya kaydedildi",
+    "nomapprinter_notready": "Harita henüz çizilmedi",
+    "nomapprinter_notenoughbasepieces": "Yeterli üs parçası yok",
+    "nomapprinter_notenoughcomfort": "Yeterli konfor yok"
+}

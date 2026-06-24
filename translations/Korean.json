@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "여행을 떠올리는 중...",
+    "nomapprinter_saving": "지도를 그리는 중...",
+    "nomapprinter_ready": "지도가 준비되었습니다",
+    "nomapprinter_savedto": "지도 저장 위치",
+    "nomapprinter_notready": "지도가 아직 그려지지 않았습니다",
+    "nomapprinter_notenoughbasepieces": "기지 건축물이 부족합니다",
+    "nomapprinter_notenoughcomfort": "편안함이 부족합니다"
+}

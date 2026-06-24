@@ -1,0 +1,9 @@
+{
+    "nomapprinter_start": "Remembering travels...",
+    "nomapprinter_saving": "Drawing map...",
+    "nomapprinter_ready": "Map is ready",
+    "nomapprinter_savedto": "Map saved to",
+    "nomapprinter_notready": "Map is not drawn yet",
+    "nomapprinter_notenoughbasepieces": "Not enough base pieces",
+    "nomapprinter_notenoughcomfort": "Not enough comfort"
+}
