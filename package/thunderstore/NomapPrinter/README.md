@@ -152,6 +152,12 @@ To get full explored map you should
 * It should be compatible with mods adding new biomes on map (if the biome color is set)
 * It is compatible with EpicLoot map pins
 
+## Conditional Config Sync
+* Server administrators can change the synchronization policy for policy-controlled settings in BepInEx/config/shudnal.ConditionalConfigSync/ConditionalConfigSync.SyncPolicy.cfg
+* Prefix an exact setting or whole-section identifier with + to force server control or - to make it client-controlled. Exact-setting rules take precedence over whole-section rules
+* Use shared modpack configs or distribute your config manually if you also want client-controlled appearance and formatting settings to be identical for all players initially
+* If you install this mod manually do not forget to install [ConditionalConfigSync](https://thunderstore.io/c/valheim/p/shudnal/ConditionalConfigSync/)
+
 ## Configurating
 The best way to handle configs is [Configuration Manager](https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/).
 

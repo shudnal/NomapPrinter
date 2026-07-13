@@ -1,3 +1,8 @@
+# 1.5.2
+* proper localization
+* migrated configuration and runtime-value synchronization from ServerSync to ConditionalConfigSync
+* server administrators can override the ownership of policy-controlled settings through ConditionalConfigSync policy
+
 # 1.5.1
 * new config to keep map position and scale when map is refreshed
 

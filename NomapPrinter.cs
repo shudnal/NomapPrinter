@@ -22,7 +22,7 @@ namespace NomapPrinter
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
-        internal static readonly ConfigSync configSync = new ConfigSync(pluginID) { DisplayName = pluginName, CurrentVersion = pluginVersion, MinimumRequiredVersion = pluginVersion };
+        internal static readonly ConfigSync configSync = new ConfigSync(pluginID) { DisplayName = pluginName, CurrentVersion = pluginVersion, MinimumRequiredVersion = pluginVersion, ModRequired = false };
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> configLocked;
@@ -203,7 +203,7 @@ namespace NomapPrinter
             modEnabled = serverConfig("General", "Enabled", true, "Print map on table interaction");
             configLocked = serverConfig("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
 
-            loggingEnabled = config("Logging", "Enabled", false, "Enable logging. [Not Synced with Server]", false);
+            loggingEnabled = config("Logging", "Enabled", false, "Enable logging.", false);
 
             mapWindow = config("Map", "Ingame map", MapWindow.ShowEverywhere, "Where to show ingame map");
             allowInteractiveMapOnWrite = config("Map", "Show interactive map on record discoveries", false, "Show interactive original game map on record discoveries part of map table used");
@@ -240,8 +240,8 @@ namespace NomapPrinter
             showMapBasePiecesRequirement = config("Map restrictions", "Show map when base pieces near the player is more than", defaultValue: 0, "Count of base pieces surrounding the player should be more than that for map to be shown");
             showMapComfortRequirement = config("Map restrictions", "Show map when player comfort is more than", defaultValue: 0, "Player comfort buff should be more than that for map to be shown");
 
-            saveMapToFile = config("Map save", "Save to file", false, "Save generated map to file. Works in normal map mode. You can set exact file name or folder name [Not Synced with Server]", false);
-            filePath = config("Map save", "Save to file path", "", "File path used to save generated map. [Not Synced with Server]", false);
+            saveMapToFile = config("Map save", "Save to file", false, "Save generated map to file. Works in normal map mode. You can set exact file name or folder name", false);
+            filePath = config("Map save", "Save to file path", "", "File path used to save generated map.", false);
 
             mapStorage = config("Map storage", "Data storage", MapStorage.LocalFolder, "Type of storage for map data. Default is save map data to local folder.");
             localFolder = config("Map storage", "Local folder", "", "Save and load map data from local folder. If relative path is set then the folder will be created at %appdata%..\\..\\LocalLow\\IronGate\\Valheim");
@@ -260,10 +260,10 @@ namespace NomapPrinter
             pinScale = config("Map style extended", "Pin scale", 1.0f, "Pin scale");
             preserveSharedMapFog = config("Map style extended", "Preserve shared map fog tint for vanilla map", true, "Generate Vanilla map with shared map fog tint");
             worldSize = config("Map style extended", "World size", 10500f, "Land outside of that radius will be ignored");
-            mapGamepadZoomSpeed = config("Map style extended", "Map gamepad zoom speed", 1f, "Speed of map zoom while using gamepad. [Not Synced with Server]", false);
-            mapGamepadMoveSpeed = config("Map style extended", "Map gamepad move speed", 1f, "Speed of map move while using gamepad. [Not Synced with Server]", false);
+            mapGamepadZoomSpeed = config("Map style extended", "Map gamepad zoom speed", 1f, "Speed of map zoom while using gamepad.", false);
+            mapGamepadMoveSpeed = config("Map style extended", "Map gamepad move speed", 1f, "Speed of map move while using gamepad.", false);
             mapSizeMultiplier = config("Map style extended", "Map size multiplier", 1f, "Use similar multiplier as in EWSize mod. Map size multiplier should also match world radius to get correct results.");
-            mapMouseScrollSpeed = config("Map style extended", "Map mouse scroll speed", 1f, "Multiplier of mouse scroll. [Not Synced with Server]", false);
+            mapMouseScrollSpeed = config("Map style extended", "Map mouse scroll speed", 1f, "Multiplier of mouse scroll.", false);
 
             fogContoursEnabled = config("Map style - Fog contours", "Enabled", true, "Enable terrain contours over unexplored fog.");
             fogContoursDistance = config("Map style - Fog contours", "Distance", 24, "Distance in pixels where terrain contours are drawn over unexplored fog.");
@@ -310,7 +310,7 @@ namespace NomapPrinter
             showLastDeathPin = config("Pins list", "Show Last Death pin", true, "Show pin where you died last time");
 
             tablePartsSwap = config("Table", "Swap interaction behaviour on map table parts", false, "Make \"Read map\" part to open interactive map and \"Record discoveries\" part to generate map. +" +
-                                                                                                     "\nDoesn't work in Show On Interaction map mode [Not Synced with Server]", false);
+                                                                                                     "\nDoesn't work in Show On Interaction map mode", false);
 
             cacheDirectory = Path.Combine(Paths.CachePath, pluginID);
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
@@ -342,9 +342,10 @@ namespace NomapPrinter
             }, isCheat: false, isNetwork: false, onlyServer: false, isSecret: false, allowInDevBuild: false, () => new DirectoryInfo(configDirectory).GetFiles("*.png").Select(file => file.Name).ToList(), alwaysRefreshTabOptions: true);
         }
 
+#pragma warning disable IDE1006 // Naming Styles
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
         {
-            return configSync.AddConfigEntry(Config, group, name, defaultValue, description, syncMode: ConfigSyncMode.Conditional, synchronizedSetting).SourceConfig;
+            return configSync.AddConfigEntry(Config, group, name, defaultValue, description, syncMode: ConfigSyncMode.Conditional, serverControlledByDefault:synchronizedSetting).SourceConfig;
         }
 
         ConfigEntry<T> serverConfig<T>(string group, string name, T defaultValue, ConfigDescription description)
@@ -355,6 +356,7 @@ namespace NomapPrinter
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true) => config(group, name, defaultValue, new ConfigDescription(description), synchronizedSetting);
 
         ConfigEntry<T> serverConfig<T>(string group, string name, T defaultValue, string description) => serverConfig(group, name, defaultValue, new ConfigDescription(description));
+#pragma warning restore IDE1006 // Naming Styles
 
         public static void LogInfo(object message)
         {
