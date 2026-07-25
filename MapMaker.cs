@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using HarmonyLib;
 using System;
 using System.Collections;
@@ -447,7 +447,7 @@ namespace NomapPrinter
         private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
         private static readonly Dictionary<string, Color32[]> pinIconsDouble = new Dictionary<string, Color32[]>();
 
-        private static Texture2D iconSpriteTexture;   // Current sprite texture is not readable. Saving a cached copy the first time the variable is accessed 
+        private static Texture2D iconSpriteTexture;   // Current sprite texture is not readable. Saving a cached copy the first time the variable is accessed
         private static int iconSize = 32;
 
         private static long worldUID;
@@ -598,15 +598,15 @@ namespace NomapPrinter
                 {
                     if (fogContoursEnabled.Value && fogContoursDistance.Value > 0)
                         yield return PrepareFogContours();
-                    
+
                     MapGenerator.SetMapTexture(exploredMapData.exploredMap);
-                    
+
                     if (useCustomUnderFogLayer.Value)
                         yield return OverlayMarkingsLayer(overFog: false);
 
                     if (useCustomFogLayer.Value)
                         OverrideFogTexture();
-                   
+
                     yield return MapGenerator.OverlayExplorationFog(exploration);
 
                     if (useCustomOverFogLayer.Value)
@@ -1037,7 +1037,7 @@ namespace NomapPrinter
 
             if (showPins.Value)
                 yield return AddPinsOnMap(map, mapResolution);
-            
+
             yield return ApplyMapTextureStriped(map, mapResolution);
 
             MapViewer.SetMapIsReady();
@@ -1086,7 +1086,7 @@ namespace NomapPrinter
 
         private static IEnumerator OverlayMarkingsLayer(bool overFog = false)
         {
-            Texture2D markings = GetLayerTexture(overFog ? "overfog" : "underfog", 
+            Texture2D markings = GetLayerTexture(overFog ? "overfog" : "underfog",
                                                  overFog ? syncOverFogLayerFromServer.Value : syncUnderFogLayerFromServer.Value);
 
             if (markings == null)
@@ -1134,7 +1134,7 @@ namespace NomapPrinter
                 source = "server";
                 return true;
             }
-            
+
             if (Directory.Exists(configDirectory))
             {
                 foreach (FileInfo file in new DirectoryInfo(configDirectory).EnumerateFiles("*", SearchOption.AllDirectories))
@@ -1339,7 +1339,7 @@ namespace NomapPrinter
                             if (iconPix.a != 0 && pinsHildirQuestColored.Value)
                             {
                                 byte alpha = iconPix.a;
-                                
+
                                 if (pin.m_type == Minimap.PinType.Hildir1)
                                     iconPix = Color32.Lerp(iconPix, pinsHildirQuestPin1Color.Value, 0.5f);
                                 else if (pin.m_type == Minimap.PinType.Hildir2)
@@ -1390,8 +1390,11 @@ namespace NomapPrinter
 
         private static bool IsExplored(int x, int y)
         {
-            Color explorationPos = Minimap.instance.m_fogTexture.GetPixel(x, y);
-            return IsExploredColor(explorationPos);
+            Texture2D fogTexture = Minimap.instance?.m_fogTexture;
+            if (fogTexture == null || x < 0 || y < 0 || x >= fogTexture.width || y >= fogTexture.height)
+                return false;
+
+            return IsExploredColor(fogTexture.GetPixel(x, y));
         }
 
         private static bool IsExploredColor(Color explorationPos)
@@ -1416,36 +1419,18 @@ namespace NomapPrinter
         {
             List<Minimap.PinData> pinsToPrint = new List<Minimap.PinData>();
 
-            if (!showPins.Value)
-                return pinsToPrint;
-
             if (Minimap.instance == null)
                 return pinsToPrint;
 
-            long playerID = Player.m_localPlayer.GetPlayerID();
             foreach (Minimap.PinData pin in Minimap.instance.m_pins)
             {
-                if (pin.m_icon.name != "mapicon_start")
-                {
-                    if (!showEveryPin.Value)
-                    {
-                        if (showNonCheckedPins.Value && pin.m_checked)
-                            continue;
+                if (!ShouldShowPin(pin))
+                    continue;
 
-                        if (showMyPins.Value && pin.m_ownerID != 0L && pin.m_ownerID != playerID && !IsPinToShowNotOwner(pin))
-                            continue;
+                if (!pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
+                    continue;
 
-                        if (showExploredPins.Value)
-                        {
-                            Minimap.instance.WorldToPixel(pin.m_pos, out int px, out int py);
-                            if (!IsExplored(px, py) && (!IsMerchantPin(pin.m_icon.name) || !showMerchantPins.Value))
-                                continue;
-                        }
-                    }
-                }
-
-                if (IsShowablePinIcon(pin))
-                    pinsToPrint.Add(pin);
+                pinsToPrint.Add(pin);
             }
 
             pinsToPrint = pinsToPrint
@@ -1456,6 +1441,44 @@ namespace NomapPrinter
                 .ToList();
 
             return pinsToPrint;
+        }
+
+        internal static bool ShouldShowPin(Minimap.PinData pin)
+        {
+            if (!showPins.Value || Minimap.instance == null)
+                return false;
+
+            if (pin?.m_icon == null)
+                return false;
+
+            if (pin.m_icon.name != "mapicon_start" && !showEveryPin.Value)
+            {
+                if (showNonCheckedPins.Value && pin.m_checked)
+                    return false;
+
+                long playerID = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+                if (showMyPins.Value && pin.m_ownerID != 0L && pin.m_ownerID != playerID && !IsPinToShowNotOwner(pin))
+                    return false;
+
+                if (showExploredPins.Value)
+                {
+                    Minimap.instance.WorldToPixel(pin.m_pos, out int px, out int py);
+                    if (!IsExplored(px, py) && (!IsMerchantPin(pin.m_icon.name) || !showMerchantPins.Value))
+                        return false;
+                }
+            }
+
+            if (!IsIconConfiguredShowable(pin.m_icon.name))
+                return false;
+
+            if (pin.m_type == Minimap.PinType.Death && showLastDeathPin.Value && !showPinDeath.Value)
+            {
+                PlayerProfile profile = Game.instance?.GetPlayerProfile();
+                if (profile == null || pin.m_pos != profile.GetDeathPoint())
+                    return false;
+            }
+
+            return true;
         }
 
         private static bool IsIconConfiguredShowable(string pinIcon)
@@ -1502,23 +1525,6 @@ namespace NomapPrinter
                 "mapicon_eventarea" => showPinEpicLoot.Value && epicLootIsLoaded,
                 _ => false,
             };
-        }
-
-        private static bool IsShowablePinIcon(Minimap.PinData pin)
-        {
-            if (pin.m_icon == null)
-                return false;
-
-            if (!IsIconConfiguredShowable(pin.m_icon.name))
-                return false;
-
-            if (pin.m_type == Minimap.PinType.Death && showLastDeathPin.Value && !showPinDeath.Value && pin.m_pos != Game.instance.GetPlayerProfile().GetDeathPoint())
-                return false;
-
-            if (!pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
-                return false;
-
-            return true;
         }
 
         private static bool AddPinIconToCache(Sprite icon)

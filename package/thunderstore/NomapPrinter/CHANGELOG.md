@@ -1,3 +1,9 @@
+# 1.5.3
+* added an option to apply Nomap Printer pin visibility rules to the interactive map; enabled by default
+* added an option to hide the player and controlled ship markers on the interactive map; disabled by default
+* added an option to keep the interactive map focused on its last viewed world position during the current world session; the first opening starts at the world center
+* added an option to prevent changing pins on the interactive map, including adding, removing, checking, and taking ownership
+
 # 1.5.2
 * proper localization
 * migrated configuration and runtime-value synchronization from ServerSync to ConditionalConfigSync

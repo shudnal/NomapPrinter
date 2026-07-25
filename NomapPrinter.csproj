@@ -112,6 +112,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InteractiveMap.cs" />
     <Compile Include="LocalizationManager.cs" />
     <Compile Include="MapGenerator.cs" />
     <Compile Include="MapMaker.cs" />

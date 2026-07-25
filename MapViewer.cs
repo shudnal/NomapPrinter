@@ -210,12 +210,7 @@ namespace NomapPrinter
             if (!allowInteractiveMapOnWrite.Value)
                 return;
 
-            Game.m_noMap = false;
-
-            Minimap.instance.inputDelay = 1f;
-            Minimap.instance.SetMapMode(Minimap.MapMode.Large);
-
-            Game.m_noMap = true;
+            InteractiveMap.Show();
         }
 
         public static void SetupSharedMapFileWatcher()
@@ -647,18 +642,108 @@ namespace NomapPrinter
             }
         }
 
+        private static bool PreventInteractiveMapPinChanges()
+        {
+            return modEnabled.Value && preventPinChanges.Value && InteractiveMap.IsOpen;
+        }
+
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.ShowPinNameInput))]
         public static class Minimap_ShowPinNameInput_PreventPinAddition
         {
-            public static bool Prefix()
+            [HarmonyPriority(Priority.First)]
+            public static bool Prefix() => !PreventInteractiveMapPinChanges();
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapDblClick))]
+        public static class Minimap_OnMapDblClick_PreventPinAddition
+        {
+            [HarmonyPriority(Priority.First)]
+            public static bool Prefix() => !PreventInteractiveMapPinChanges();
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapLeftClick))]
+        public static class Minimap_OnMapLeftClick_PreventPinStateChange
+        {
+            [HarmonyPriority(Priority.First)]
+            public static bool Prefix() => !PreventInteractiveMapPinChanges();
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapRightClick))]
+        public static class Minimap_OnMapRightClick_PreventPinRemoval
+        {
+            [HarmonyPriority(Priority.First)]
+            public static bool Prefix() => !PreventInteractiveMapPinChanges();
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePin), typeof(Vector3), typeof(float))]
+        public static class Minimap_RemovePin_PreventPinRemoval
+        {
+            [HarmonyPriority(Priority.First)]
+            public static bool Prefix(ref bool __result)
             {
-                if (!modEnabled.Value)
+                if (!PreventInteractiveMapPinChanges())
                     return true;
 
-                if (!Game.m_noMap)
-                    return true;
+                __result = false;
+                return false;
+            }
+        }
 
-                return !(allowInteractiveMapOnWrite.Value && preventPinAddition.Value);
+        private readonly struct InteractivePinState
+        {
+            public readonly Minimap.PinData Pin;
+            public readonly bool Checked;
+            public readonly long OwnerID;
+
+            public InteractivePinState(Minimap.PinData pin)
+            {
+                Pin = pin;
+                Checked = pin.m_checked;
+                OwnerID = pin.m_ownerID;
+            }
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateMap))]
+        public static class Minimap_UpdateMap_PreventGamepadPinStateChange
+        {
+            private static void Prefix(Minimap __instance, out List<InteractivePinState> __state)
+            {
+                __state = null;
+
+                if (!PreventInteractiveMapPinChanges() || __instance.m_pins == null || !ZInput.GetButtonDown("JoyTabLeft"))
+                    return;
+
+                __state = new List<InteractivePinState>(__instance.m_pins.Count);
+                foreach (Minimap.PinData pin in __instance.m_pins)
+                    __state.Add(new InteractivePinState(pin));
+            }
+
+            private static void Postfix(Minimap __instance, List<InteractivePinState> __state)
+            {
+                if (__state == null || __instance.m_pins == null)
+                    return;
+
+                bool restored = false;
+                foreach (InteractivePinState state in __state)
+                {
+                    if (state.Pin == null || !__instance.m_pins.Contains(state.Pin))
+                        continue;
+
+                    if (state.Pin.m_checked != state.Checked)
+                    {
+                        state.Pin.m_checked = state.Checked;
+                        restored = true;
+                    }
+
+                    if (state.Pin.m_ownerID != state.OwnerID)
+                    {
+                        state.Pin.m_ownerID = state.OwnerID;
+                        restored = true;
+                    }
+                }
+
+                if (restored)
+                    __instance.m_pinUpdateRequired = true;
             }
         }
     }

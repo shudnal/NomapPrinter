@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -18,7 +18,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.2";
+        public const string pluginVersion = "1.5.3";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -35,7 +35,10 @@ namespace NomapPrinter
         public static ConfigEntry<MapWindow> mapWindow;
         public static ConfigEntry<bool> allowInteractiveMapOnWrite;
         public static ConfigEntry<bool> showSharedMap;
-        public static ConfigEntry<bool> preventPinAddition;
+        public static ConfigEntry<bool> preventPinChanges;
+        public static ConfigEntry<bool> applyPinFiltersToInteractiveMap;
+        public static ConfigEntry<bool> hidePlayerMarkerOnInteractiveMap;
+        public static ConfigEntry<bool> doNotCenterInteractiveMapOnPlayer;
 
         public static ConfigEntry<bool> useCustomExploredLayer;
         public static ConfigEntry<bool> useCustomUnderFogLayer;
@@ -45,7 +48,7 @@ namespace NomapPrinter
         public static ConfigEntry<bool> syncUnderFogLayerFromServer;
         public static ConfigEntry<bool> syncOverFogLayerFromServer;
         public static ConfigEntry<bool> syncFogLayerFromServer;
-        
+
         public static ConfigEntry<float> showNearTheTableDistance;
         public static ConfigEntry<int> showMapBasePiecesRequirement;
         public static ConfigEntry<int> showMapComfortRequirement;
@@ -208,7 +211,10 @@ namespace NomapPrinter
             mapWindow = config("Map", "Ingame map", MapWindow.ShowEverywhere, "Where to show ingame map");
             allowInteractiveMapOnWrite = config("Map", "Show interactive map on record discoveries", false, "Show interactive original game map on record discoveries part of map table used");
             showSharedMap = config("Map", "Show shared map", true, "Show parts of the map shared by others");
-            preventPinAddition = config("Map", "Prevent adding pins on interactive map", false, "Prevent creating pin when using interactive map");
+            preventPinChanges = config("Map", "Prevent changing pins on interactive map", false, "Prevent adding, removing, checking, or taking ownership of pins when using the interactive map");
+            applyPinFiltersToInteractiveMap = config("Map", "Apply pin visibility settings to interactive map", true, "Apply Nomap Printer pin visibility rules to the interactive map");
+            hidePlayerMarkerOnInteractiveMap = config("Map", "Hide player marker on interactive map", false, "Hide player and controlled ship position markers on the interactive map");
+            doNotCenterInteractiveMapOnPlayer = config("Map", "Do not center interactive map on player", false, "Keep the interactive map centered on the last viewed world position during the current world session. The first opening starts at the world center");
 
             useCustomExploredLayer = serverConfig("Map custom layers", "Explored map - Enable layer", false, "Use custom explored map layer if it was found in config folder or shared from server");
             syncExploredLayerFromServer = serverConfig("Map custom layers", "Explored map - Share from server", false, "Share explored map layer from server to clients. " +
@@ -217,7 +223,7 @@ namespace NomapPrinter
 
             useCustomUnderFogLayer = serverConfig("Map custom layers", "Under fog - Enable layer", false, "Use custom under fog map layer if it was found in config folder or shared from server");
             syncUnderFogLayerFromServer = serverConfig("Map custom layers", "Under fog - Share from server", false, "Enable server to clients sharing of layer data");
-            
+
             useCustomOverFogLayer = serverConfig("Map custom layers", "Over fog - Enable layer", false, "Use custom over fog map layer if it was found in config folder or shared from server");
             syncOverFogLayerFromServer = serverConfig("Map custom layers", "Over fog - Share from server", false, "Enable server to clients sharing of layer data");
 
@@ -522,13 +528,21 @@ namespace NomapPrinter
         [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start))]
         public static class ZoneSystem_Start_CustomTexturesWatcherEnable
         {
-            public static void Postfix() => SetupConfigWatcher(enabled: true);
+            public static void Postfix()
+            {
+                InteractiveMap.ResetSession();
+                SetupConfigWatcher(enabled: true);
+            }
         }
 
         [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.OnDestroy))]
         public static class ZoneSystem_OnDestroy_CustomTexturesWatcherDisable
         {
-            public static void Postfix() => SetupConfigWatcher(enabled: false);
+            public static void Postfix()
+            {
+                InteractiveMap.ResetSession();
+                SetupConfigWatcher(enabled: false);
+            }
         }
     }
 }

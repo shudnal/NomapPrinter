@@ -20,7 +20,9 @@ Map content will be automatically updated on file change.
 * option to save generated map to file
 * map generated in 4096x4096 resolution with option to generate 8192x8192 (smoother visuals at the cost of longer draw and larger size)
 * 4 different styles of map with topographical lines
-* configurable pins on map
+* configurable pins on generated and interactive maps
+* optional player and controlled ship marker hiding on the interactive map
+* optional session-persistent interactive map focus independent of the player position
 * pins config is server synced
 * Full gamepad support
 * contours of unexplored terrain on static map (non vanilla versions)
@@ -40,9 +42,19 @@ Map content will be automatically updated on file change.
 * set to default zoom by right mouse click
 * centered at spawn point by middle mouse click
 
+## Interactive map privacy
+The vanilla interactive map opened through Nomap Printer can be configured without replacing it with a static image:
+
+* `Prevent changing pins on interactive map` blocks pin creation, removal, checked-state changes, and taking ownership of shared pins
+* `Apply pin visibility settings to interactive map` is enabled by default and applies the existing pin category, exploration, ownership, and checked-state rules to the interactive map
+* `Hide player marker on interactive map` is disabled by default and hides both the player arrow and the controlled ship marker when enabled
+* `Do not center interactive map on player` opens the map at the world center the first time in a world session, then restores the last viewed world position on subsequent openings. The remembered position is cleared when leaving the world
+
+These options only affect the interactive map opened by Nomap Printer. Pin visibility filtering does not remove saved pins or modify the player's stored map data.
+
 ## Custom map layers
 
-You can use your own variants of 
+You can use your own variants of
 * explored map layer
 * fog texture
 * under fog layer (for custom markings)
@@ -51,15 +63,15 @@ You can use your own variants of
 That layers should be placed into **\BepInEx\config\shudnal.NomapPrinter** directory as PNG files and named accordingly:
 * "{MapType}.{WorldName}.explored.png" for explored map, nontransparent, resolution must be 4096x4096
 * "{MapType}.{WorldName}.underfog.png" for under fog layer, transparent with only needed markings, resolution must be 4096x4096
-* "{MapType}.{WorldName}.overfog.png" for over fog layer, transparent with only needed markings, resolution must be 4096x4096 
+* "{MapType}.{WorldName}.overfog.png" for over fog layer, transparent with only needed markings, resolution must be 4096x4096
 * "{MapType}.{WorldName}.fog.png" for fog texture, nontransparent, any resolution, the pattern will be repeated
 
 If you have several worlds with similar name then instead on world name you can use numerical world ID. To get world ID without using any other mod you can generate map using that mod and check **\BepInEx\cache\shudnal.NomapPrinter** directory. There will be folders named as world ID. One of them will be your world.
 
-Acceptable map types: 
+Acceptable map types:
 * BirdsEye
 * Topographical
-* Chart 
+* Chart
 * OldChart
 
 ### File repacking
@@ -74,7 +86,7 @@ The command will create the file with extension *.zpack which you can use instea
 
 Layers files can be synchronized from server to all clients if placed into **\\BepInEx\\config\\shudnal.NomapPrinter** directory on the server. That directory will be created automatically on the server.
 
-The total volume of one world files should not exceed ~7-8 MB otherwise it is better to place some files into shared config folder and exchange it via modpacks or manually placing it into clients' config folder. 
+The total volume of one world files should not exceed ~7-8 MB otherwise it is better to place some files into shared config folder and exchange it via modpacks or manually placing it into clients' config folder.
 
 By default only underfog, overfog and fog textures will automatically be shared from server to clients on file change as they most likely have rather small size.
 
@@ -92,8 +104,8 @@ Explored map will not be changing often. Markings will be changed often. Fog wil
 
 ### Share explored map and fog texture in modpack
 
-Aside of required files (icon.png, manifest.json, README.md) in modpack archive you should 
-* create **\\config\\shudnal.NomapPrinter** folder 
+Aside of required files (icon.png, manifest.json, README.md) in modpack archive you should
+* create **\\config\\shudnal.NomapPrinter** folder
 * place **BirdsEye.BraveNewWorld.explored.png** and **BirdsEye.BraveNewWorld.fog.png** files in that folder
 
 That files will be copied into **\\BepInEx\\config\\** on any client automatically when they install/update the modpack.
