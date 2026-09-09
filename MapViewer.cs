@@ -668,8 +668,8 @@ namespace NomapPrinter
             public static bool Prefix() => !PreventInteractiveMapPinChanges();
         }
 
-        [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapRightClick))]
-        public static class Minimap_OnMapRightClick_PreventPinRemoval
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePinUnderPointer))]
+        public static class Minimap_RemovePinUnderPointer_PreventPinRemoval
         {
             [HarmonyPriority(Priority.First)]
             public static bool Prefix() => !PreventInteractiveMapPinChanges();

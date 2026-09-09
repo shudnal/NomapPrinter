@@ -12,13 +12,13 @@ using static Terminal;
 namespace NomapPrinter
 {
     [BepInDependency(epicLootGUID, BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("_shudnal.ConditionalConfigSync", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("_shudnal.ConditionalConfigSync", "1.0.5")]
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
     public class NomapPrinter : BaseUnityPlugin
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.3";
+        public const string pluginVersion = "1.5.4";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -345,7 +345,7 @@ namespace NomapPrinter
                 {
                     args.Context.AddString("Syntax: repackpng [filename]");
                 }
-            }, isCheat: false, isNetwork: false, onlyServer: false, isSecret: false, allowInDevBuild: false, () => new DirectoryInfo(configDirectory).GetFiles("*.png").Select(file => file.Name).ToList(), alwaysRefreshTabOptions: true);
+            }, isCheat: false, isNetwork: false, onlyServer: false, isSecret: false, allowInDevBuild: false, hideBehindDevCommands: false, () => new DirectoryInfo(configDirectory).GetFiles("*.png").Select(file => file.Name).ToList(), alwaysRefreshTabOptions: true);
         }
 
 #pragma warning disable IDE1006 // Naming Styles

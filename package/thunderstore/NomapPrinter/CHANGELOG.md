@@ -1,3 +1,7 @@
+# 1.5.4
+* Updated for the Valheim 1.0.7 release.
+* Updated required dependencies to BepInExPack Valheim 5.4.2350 and ConditionalConfigSync 1.0.5.
+
 # 1.5.3
 * added an option to apply Nomap Printer pin visibility rules to the interactive map; enabled by default
 * added an option to hide the player and controlled ship markers on the interactive map; disabled by default

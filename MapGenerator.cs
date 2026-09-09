@@ -180,7 +180,7 @@ namespace NomapPrinter
             yield return OverlayResultOnMap();
         }
 
-        public static IEnumerator OverlayExplorationFog(bool[] exploration)
+        public static IEnumerator OverlayExplorationFog(BitArray exploration)
         {
             for (int i = 0; i < ExploredData.Length; i++)
                 ExploredData[i] = false;
@@ -213,7 +213,7 @@ namespace NomapPrinter
                     }
                 }
             }
-            
+
             yield return StylizeFog();
 
             yield return OverlayResultOnMap();

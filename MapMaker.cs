@@ -454,7 +454,7 @@ namespace NomapPrinter
 
         private static Texture2D noClouds;
 
-        private static bool[] exploration;
+        private static BitArray exploration;
         private static Color32[] cachedContours;
         private static long cachedContoursWorldUID;
         private static int cachedContoursTextureSize;
@@ -745,12 +745,7 @@ namespace NomapPrinter
             if (!player.m_customData.TryGetValue(WorldDataName(worldUID), out string exploredMapBase64))
                 return false;
 
-            BitArray ba = new BitArray(Utils.Decompress(Convert.FromBase64String(exploredMapBase64)));
-
-            if (exploration == null || exploration.Length != ba.Count)
-                exploration = new bool[ba.Count];
-
-            ba.CopyTo(exploration, 0);
+            exploration = new BitArray(Utils.Decompress(Convert.FromBase64String(exploredMapBase64)));
 
             return true;
         }
@@ -759,16 +754,13 @@ namespace NomapPrinter
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            exploration = Minimap.instance.m_explored.ToArray();
+            exploration = new BitArray(Minimap.instance.m_explored);
 
             if (showSharedMap.Value)
-                for (int i = 0; i < exploration.Length; i++)
-                    exploration[i] = exploration[i] || Minimap.instance.m_exploredOthers[i];
+                exploration.Or(Minimap.instance.m_exploredOthers);
 
-            BitArray ba = new BitArray(exploration);
-
-            byte[] bytes = new byte[(ba.Length - 1) / 8 + 1];
-            ba.CopyTo(bytes, 0);
+            byte[] bytes = new byte[(exploration.Count + 7) / 8];
+            exploration.CopyTo(bytes, 0);
 
             SaveValue(WorldDataName(ZNet.instance.GetWorldUID()), Convert.ToBase64String(Utils.Compress(bytes)));
 
