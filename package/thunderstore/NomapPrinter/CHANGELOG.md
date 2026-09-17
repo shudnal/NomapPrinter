@@ -1,3 +1,6 @@
+# 1.5.5
+* patch 1.0.14
+
 # 1.5.4
 * Updated for the Valheim 1.0.7 release.
 * Updated required dependencies to BepInExPack Valheim 5.4.2350 and ConditionalConfigSync 1.0.5.

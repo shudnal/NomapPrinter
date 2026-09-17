@@ -191,7 +191,7 @@ namespace NomapPrinter
             if (ZInput.GetButton("JoyRTrigger"))
                 ZoomMap(mapGamepadZoomSpeed.Value * dt * 1.5f);
 
-            MoveMap(-ZInput.GetJoyLeftStickX(smooth: true), ZInput.GetJoyLeftStickY(), dt);
+            MoveMap(-ZInput.GetJoyLeftStickX(), ZInput.GetJoyLeftStickY(), dt);
         }
 
         public static void ShowMap()
