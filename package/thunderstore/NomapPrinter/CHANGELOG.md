@@ -1,3 +1,8 @@
+# 1.5.6
+* added configurable persistent event markers and areas, including Jotun invasions, on generated and interactive maps
+* persistent event pins are shown in unexplored areas by default, with a separate option to restrict them to explored terrain
+* persistent event areas on generated maps use their world radius and are clipped safely at image edges
+
 # 1.5.5
 * patch 1.0.14
 

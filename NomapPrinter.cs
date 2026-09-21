@@ -18,7 +18,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.5";
+        public const string pluginVersion = "1.5.6";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -81,6 +81,7 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showMyPins;
         public static ConfigEntry<bool> showNonCheckedPins;
         public static ConfigEntry<bool> showMerchantPins;
+        public static ConfigEntry<bool> showPersistentEventPins;
         public static ConfigEntry<bool> showPinsDoubleSize;
         public static ConfigEntry<bool> showMerchantPinsNames;
 
@@ -101,6 +102,7 @@ namespace NomapPrinter
         public static ConfigEntry<bool> showPinTrader;
         public static ConfigEntry<bool> showPinHildir;
         public static ConfigEntry<bool> showPinHildirQuest;
+        public static ConfigEntry<bool> showPinPersistentEvent;
         public static ConfigEntry<bool> showPinBogWitch;
         public static ConfigEntry<bool> showPinBoss;
         public static ConfigEntry<bool> showPinFire;
@@ -279,6 +281,7 @@ namespace NomapPrinter
             showPins = config("Pins", "Show map pins", true, "Show pins on drawed map");
             showExploredPins = config("Pins", "Show only explored pins", true, "Only show pins on explored part of the map");
             showMerchantPins = config("Pins", "Show merchants pins always", true, "Show merchant pins even in unexplored part of the map");
+            showPersistentEventPins = config("Pins", "Show persistent event pins always", true, "Show active persistent event pins, including Jotun invasions, even in unexplored parts of the map. Requires Show persistent event pins. Does not reveal terrain or affect ordinary raids.");
             showMyPins = config("Pins", "Show only my pins", true, "Only show your pins on the map");
             showNonCheckedPins = config("Pins", "Show only unchecked pins", true, "Only show pins that doesn't checked (have no red cross)");
             showPinsDoubleSize = config("Pins", "Show static pins in double size", true, "Show pins of the Sacrificial Stones, traders and other important pins in double size (vanilla game behaviour)");
@@ -303,6 +306,7 @@ namespace NomapPrinter
             showPinTrader = config("Pins list", "Show Haldor pins", true, "Show Haldor pin on drawed map");
             showPinHildir = config("Pins list", "Show Hildir pins", true, "Show Hildir pin on drawed map");
             showPinHildirQuest = config("Pins list", "Show Hildir quest pins", true, "Show Hildir quest pins on drawed map");
+            showPinPersistentEvent = config("Pins list", "Show persistent event pins", true, "Show markers and areas of active persistent events, including Jotun invasions, on generated maps and on the interactive map when its pin visibility settings are enabled. Does not affect ordinary raids or Epic Loot pins.");
             showPinBogWitch = config("Pins list", "Show Bog Witch pins", true, "Show Bog Witch pin on drawed map");
             showPinBoss = config("Pins list", "Show Boss pins", true, "Show Boss pins on drawed map");
             showPinFire = config("Pins list", "Show Fire pins", true, "Show Fire pins on drawed map");
@@ -314,6 +318,9 @@ namespace NomapPrinter
             showPinDeath = config("Pins list", "Show Death pins", false, "Show Death pins on drawed map");
             showPinEpicLoot = config("Pins list", "Show Epic Loot pins", true, "Show Epic Loot pins on drawed map");
             showLastDeathPin = config("Pins list", "Show Last Death pin", true, "Show pin where you died last time");
+
+            showPersistentEventPins.SettingChanged += (s, e) => InvalidatePinVisibility();
+            showPinPersistentEvent.SettingChanged += (s, e) => InvalidatePinVisibility();
 
             tablePartsSwap = config("Table", "Swap interaction behaviour on map table parts", false, "Make \"Read map\" part to open interactive map and \"Record discoveries\" part to generate map. +" +
                                                                                                      "\nDoesn't work in Show On Interaction map mode", false);
@@ -363,6 +370,12 @@ namespace NomapPrinter
 
         ConfigEntry<T> serverConfig<T>(string group, string name, T defaultValue, string description) => serverConfig(group, name, defaultValue, new ConfigDescription(description));
 #pragma warning restore IDE1006 // Naming Styles
+
+        private static void InvalidatePinVisibility()
+        {
+            if (Minimap.instance != null)
+                Minimap.instance.m_pinUpdateRequired = true;
+        }
 
         public static void LogInfo(object message)
         {

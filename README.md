@@ -30,9 +30,22 @@ Map content will be automatically updated on file change.
 ## Pins default config
 * pins only shows in explored part of the map
 * traders' pins are always shown (especially handy for Hildir's quest pins)
+* active persistent event markers and areas, including Jotun invasions, are shown even in unexplored areas
 * only show your own pins (no shared pins)
 * pins that checked (red crossed) are not shown
 * Bed and death pins are not shown
+
+## Persistent event pins
+
+`Pins list -> Show persistent event pins` enables markers and areas for active persistent events, including Jotun invasions. Enabled by default.
+
+`Pins -> Show persistent event pins always` allows those pins in unexplored areas, independently of the merchant/Hildir setting. Enabled by default. Disable it to respect `Show only explored pins` without hiding events on explored terrain.
+
+These settings affect generated maps and the interactive map when `Apply pin visibility settings to interactive map` is enabled. `Show map pins` remains the master switch; `Show all pins` overrides category, exploration, ownership, and checked-state filters as before. Showing an event does not reveal the terrain underneath it.
+
+Only pins belonging to active persistent events are affected. Ordinary raids and Epic Loot markers retain their existing rules. Event areas use their world radius on generated maps. Generated maps remain snapshots and must be regenerated at the Cartography Table to reflect newly started or completed events; interactive map pins follow the game's live event list. Images loaded from a shared file are not modified.
+
+Compass already recognizes these as the standard `RandomEvent` (marker) and `EventArea` (area) pin types. Its own type, name, and distance filters still apply independently of Nomap Printer.
 
 ## Map can be
 * opened by Map bind key (default M)
