@@ -175,6 +175,7 @@ namespace NomapPrinter
 
             ConfigInit();
             _ = configSync.AddLockingConfigEntry(configLocked);
+            LocalizationManager.Localizer.ApplyCurrentLocalization();
 
             Game.isModded = true;
 
