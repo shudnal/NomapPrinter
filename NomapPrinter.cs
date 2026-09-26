@@ -168,6 +168,8 @@ namespace NomapPrinter
 
         void Awake()
         {
+            LocalizationManager.Localizer.Initialize();
+
             harmony.PatchAll();
             instance = this;
 
@@ -329,8 +331,6 @@ namespace NomapPrinter
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
 
             InitTerminalCommands();
-
-            StartCoroutine(LocalizationManager.Localizer.Load());
         }
 
         public void InitTerminalCommands()
