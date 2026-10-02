@@ -1,7 +1,5 @@
 # 1.5.8
-* fixed duplicate Harmony patch registration introduced when merging localization initialization changes
-* restored selective patch registration on headless servers
-* removed a redundant headless check while preserving coroutine-free localization initialization
+* headless skip localization initialization and localization patches
 
 # 1.5.7
 * local map saves encode PNG and write files on a serialized background worker without blocking character saves
