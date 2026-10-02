@@ -106,6 +106,9 @@ public class Localizer
 
     public static IEnumerator Load()
     {
+        if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            yield break;
+
         yield return new WaitUntil(() => PlatformManager.DistributionPlatform != null && PlatformInitializer.PreferencesInitialized);
 
         // Prevent NRE if language has not been set explicitly yet
@@ -211,6 +214,9 @@ public class Localizer
 
     static Localizer()
     {
+        if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            return;
+
         Harmony harmony = new("org.bepinex.helpers.LocalizationManager");
         harmony.Patch(AccessTools.DeclaredMethod(typeof(Localization), nameof(Localization.LoadCSV)), postfix: new HarmonyMethod(AccessTools.DeclaredMethod(typeof(Localizer), nameof(LoadLocalization))));
     }

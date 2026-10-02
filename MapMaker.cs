@@ -52,6 +52,9 @@ namespace NomapPrinter
 
             public IEnumerator Init()
             {
+                if (IsHeadless)
+                    yield break;
+
                 if (initialized)
                 {
                     threads = null;
@@ -298,6 +301,9 @@ namespace NomapPrinter
 
             public void Init(Color32[] mapData, MapType mapType)
             {
+                if (IsHeadless)
+                    return;
+
                 int resolution = (int)Math.Sqrt(mapData.Length);
 
                 exploredMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false, false);
@@ -326,6 +332,9 @@ namespace NomapPrinter
 
             public bool LoadExploredMap()
             {
+                if (IsHeadless)
+                    return false;
+
                 if (exploredMap != null && exploredMapType == mapType.Value)
                     return true;
 
@@ -442,7 +451,20 @@ namespace NomapPrinter
         public static bool isWorking = false;
         private static IEnumerator worker;
 
-        public static Texture2D mapTexture = new Texture2D(WorldMapData.TextureSize, WorldMapData.TextureSize, TextureFormat.RGB24, false);
+        public static Texture2D mapTexture;
+
+        // Keep the public field, but allocate it only from a graphical client path.
+        // Reading server-side layer data must not allocate a texture as a side effect.
+        internal static Texture2D GetMapTexture()
+        {
+            if (IsHeadless)
+                return null;
+
+            if (mapTexture == null)
+                mapTexture = new Texture2D(WorldMapData.TextureSize, WorldMapData.TextureSize, TextureFormat.RGB24, false);
+
+            return mapTexture;
+        }
 
         private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
         private static readonly Dictionary<string, Color32[]> pinIconsDouble = new Dictionary<string, Color32[]>();
@@ -508,8 +530,13 @@ namespace NomapPrinter
 
         public static void GenerateMap()
         {
+            if (IsHeadless)
+                return;
+
             if (!saveMapToFile.Value && !Game.m_noMap)
                 return;
+
+            _ = GetMapTexture();
 
             if (isWorking && worker != null)
             {
@@ -526,12 +553,19 @@ namespace NomapPrinter
 
         public static void PregenerateMap()
         {
+            if (IsHeadless)
+                return;
+
+            _ = GetMapTexture();
             worldUID = ZNet.instance.GetWorldUID();
             instance.StartCoroutine(CreateMap(pregeneration: true));
         }
 
         public static void PreloadExploredMap()
         {
+            if (IsHeadless)
+                return;
+
             worldUID = ZNet.instance.GetWorldUID();
 
             exploredMapData ??= new ExploredMapData();
@@ -752,6 +786,9 @@ namespace NomapPrinter
 
         public static void SavePlayerExploration()
         {
+            if (IsHeadless)
+                return;
+
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             exploration = new BitArray(Minimap.instance.m_explored);
@@ -1099,6 +1136,9 @@ namespace NomapPrinter
 
         private static Texture2D GetLayerTexture(string layer, bool loadFromServer)
         {
+            if (IsHeadless)
+                return null;
+
             if (!TryGetLayerData(layer, loadFromServer, out byte[] data, out string source))
                 return null;
 

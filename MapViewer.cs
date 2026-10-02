@@ -19,7 +19,7 @@ namespace NomapPrinter
         public static RectTransform viewport;
         public static Image mapImage;
 
-        public static Texture2D mapTexture = MapMaker.mapTexture;
+        public static Texture2D mapTexture => MapMaker.GetMapTexture();
         private static bool mapTextureIsReady = false;
 
         private static bool _displayingWindow = false;
@@ -29,15 +29,12 @@ namespace NomapPrinter
         private static int _previousCursorLockState;
         private static bool _previousCursorVisible;
 
-        private static DirectoryInfo pluginFolder;
-        private static FileSystemWatcher fileSystemWatcher;
-
         private const string objectRootName = "NomapPrinter_Parent";
         private const string objectScrollViewName = "NomapPrinter_ScrollView";
         private const string objectViewPortName = "NomapPrinter_ViewPort";
         private const string objectMapName = "NomapPrinter_Map";
         
-        private static readonly int layerUI = LayerMask.NameToLayer("UI");
+        private static int layerUI;
 
         public static int hiddenFrames;
 
@@ -106,18 +103,25 @@ namespace NomapPrinter
 
         public static void Start()
         {
-            pluginFolder = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent;
+            if (IsHeadless)
+                return;
 
-            mapDataFromFile.ValueChanged += new Action(LoadMapFromSharedValue);
+            _ = MapMaker.GetMapTexture();
+            mapDataFromFile.ValueChanged += LoadMapFromSharedValue;
 
             var tCursor = typeof(Cursor);
             _curLockState = tCursor.GetProperty("lockState", BindingFlags.Static | BindingFlags.Public);
             _curVisible = tCursor.GetProperty("visible", BindingFlags.Static | BindingFlags.Public);
         }
 
+        public static void Stop()
+        {
+            mapDataFromFile.ValueChanged -= LoadMapFromSharedValue;
+        }
+
         public static void Update()
         {
-            if (!mapWindowInitialized)
+            if (IsHeadless || !mapWindowInitialized)
                 return;
 
             if (ZInput.VirtualKeyboardOpen)
@@ -213,44 +217,16 @@ namespace NomapPrinter
             InteractiveMap.Show();
         }
 
-        public static void SetupSharedMapFileWatcher()
-        {
-            if (sharedFile.Value.IsNullOrWhiteSpace())
-                return;
-
-            fileSystemWatcher?.Dispose();
-            fileSystemWatcher = null;
-
-            fileSystemWatcher = new FileSystemWatcher()
-            {
-                Path = Path.GetDirectoryName(sharedFile.Value),
-                Filter = Path.GetFileName(sharedFile.Value)
-            };
-
-            if (fileSystemWatcher.Path.IsNullOrWhiteSpace())
-                fileSystemWatcher.Path = pluginFolder.FullName;
-
-            string mapFileName = Path.Combine(fileSystemWatcher.Path, fileSystemWatcher.Filter);
-
-            fileSystemWatcher.Changed += new FileSystemEventHandler(MapFileChanged);
-            fileSystemWatcher.Created += new FileSystemEventHandler(MapFileChanged);
-            fileSystemWatcher.Renamed += new RenamedEventHandler(MapFileChanged);
-            fileSystemWatcher.IncludeSubdirectories = true;
-            fileSystemWatcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-            fileSystemWatcher.EnableRaisingEvents = mapStorage.Value == MapStorage.LoadFromSharedFile;
-
-            LogInfo($"Watcher {(fileSystemWatcher.EnableRaisingEvents ? "active" : "inactive")}: {mapFileName}");
-
-            AssignMapDataFromSharedFile(mapFileName);
-        }
-
         public static void SetMapIsReady(bool ready = true)
         {
+            if (IsHeadless)
+                return;
+
             mapTextureIsReady = ready;
             ResetContent();
         }
 
-        public static bool IsMapReady() => mapTextureIsReady;
+        public static bool IsMapReady() => !IsHeadless && mapTextureIsReady;
 
         private static void SetUnlockCursor(int lockState, bool cursorVisible)
         {
@@ -352,6 +328,8 @@ namespace NomapPrinter
 
         private static void AddIngameView(Transform parentTransform)
         {
+            layerUI = LayerMask.NameToLayer("UI");
+
             // Parent object to set visibility
             parentObject = new GameObject(objectRootName, typeof(RectTransform))
             {
@@ -449,34 +427,6 @@ namespace NomapPrinter
             }
         }
 
-        private static void MapFileChanged(object sender, FileSystemEventArgs eargs)
-        {
-            AssignMapDataFromSharedFile(eargs.FullPath);
-        }
-
-        private static void AssignMapDataFromSharedFile(string filename)
-        {
-            string fileData = "";
-
-            if (File.Exists(filename))
-            {
-                try
-                {
-                    fileData = Convert.ToBase64String(File.ReadAllBytes(filename));
-                }
-                catch (Exception e)
-                {
-                    LogInfo($"Error reading file ({filename})! Error: {e.Message}");
-                }
-            }
-            else
-            {
-                LogInfo($"Can't find file ({filename})!");
-            }
-
-            mapDataFromFile.AssignLocalValue(fileData);
-        }
-
         private static void LoadMapFromSharedValue()
         {
             if (LoadMapFromSharedFile())
@@ -485,8 +435,12 @@ namespace NomapPrinter
 
         private static bool LoadMapFromSharedFile()
         {
-            if (mapStorage.Value != MapStorage.LoadFromSharedFile || mapDataFromFile.Value.IsNullOrWhiteSpace())
+            if (IsHeadless || mapStorage.Value != MapStorage.LoadFromSharedFile || mapDataFromFile.Value.IsNullOrWhiteSpace())
                 return false;
+
+            // Switching to a shared file must not replace pixels while a local save
+            // still uses the captured texture. Local file reloads already do this.
+            MapFileWriter.Flush();
 
             try
             {
@@ -524,6 +478,11 @@ namespace NomapPrinter
 
         private static bool LoadMapFromLocalFile(Player player)
         {
+            if (IsHeadless)
+                return false;
+
+            // A quick reconnect must not load an older file while its replacement is pending.
+            MapFileWriter.Flush();
             string filename = LocalFileName(player);
 
             if (!File.Exists(filename))
@@ -549,7 +508,7 @@ namespace NomapPrinter
 
         private static void SaveMapToLocalFile(Player player)
         {
-            if (!modEnabled.Value)
+            if (IsHeadless || !modEnabled.Value)
                 return;
 
             if (player == null || player != Player.m_localPlayer)
@@ -561,18 +520,18 @@ namespace NomapPrinter
             if (!IsMapReady())
                 return;
 
-            string filename = LocalFileName(player);
-
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(filename));
-
-                LogInfo($"Saving nomap data to {filename}");
-                File.WriteAllBytes(filename, ImageConversion.EncodeToPNG(mapTexture));
+                string filename = Path.GetFullPath(LocalFileName(player));
+                // Resolve the lazy texture property here, not from the worker. The job
+                // keeps this reference and path; no pixel copy or main-thread encoding.
+                Texture2D texture = mapTexture;
+                MapFileWriter.Enqueue(filename, texture);
+                LogInfo($"Queued nomap data to {filename}: PNG encoding and disk write pending");
             }
             catch (Exception ex)
             {
-                LogInfo($"Saving map to local file error:\n{ex}");
+                LogWarning($"Queueing map save to local file failed:\n{ex}");
             }
         }
 
@@ -590,7 +549,7 @@ namespace NomapPrinter
         {
             public static void Postfix(Player __instance)
             {
-                if (!modEnabled.Value)
+                if (IsHeadless || !modEnabled.Value)
                     return;
 
                 if (__instance == null || __instance != Player.m_localPlayer)
@@ -611,13 +570,11 @@ namespace NomapPrinter
         {
             public static void Postfix(Hud __instance)
             {
-                if (!modEnabled.Value)
+                if (IsHeadless || !modEnabled.Value)
                     return;
 
                 if (!__instance.m_rootObject.transform.Find(objectRootName))
                     AddIngameView(__instance.m_rootObject.transform);
-
-                SetupSharedMapFileWatcher();
             }
         }
 
@@ -626,7 +583,7 @@ namespace NomapPrinter
         {
             public static void Postfix(ref bool __result)
             {
-                if (!modEnabled.Value)
+                if (IsHeadless || !modEnabled.Value)
                     return;
 
                 if (!Game.m_noMap)

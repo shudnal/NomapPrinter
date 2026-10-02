@@ -118,6 +118,8 @@
   <ItemGroup>
     <Compile Include="InteractiveMap.cs" />
     <Compile Include="LocalizationManager.cs" />
+    <Compile Include="MapFileSync.cs" />
+    <Compile Include="MapFileWriter.cs" />
     <Compile Include="MapGenerator.cs" />
     <Compile Include="MapMaker.cs" />
     <Compile Include="MapPinTexts.cs" />

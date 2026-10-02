@@ -1,3 +1,9 @@
+# 1.5.7
+* local map saves encode PNG and write files on a serialized background worker without blocking character saves
+* background PNG encoding failures preserve the previous map and are logged without a main-thread retry
+* pending local map writes finish on world shutdown; completed saves log separate PNG encoding and disk write timings
+* headless servers skip map UI patches, texture allocation, cursor setup, and client localization while retaining map file and custom layer synchronization
+
 # 1.5.6
 * added configurable persistent event markers and areas, including Jotun invasions, on generated and interactive maps
 * persistent event pins are shown in unexplored areas by default, with a separate option to restrict them to explored terrain
