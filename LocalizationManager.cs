@@ -112,8 +112,6 @@ public class Localizer
             return;
 
         initialized = true;
-        if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
-            return;
 
         EnsureYamlDotNetAvailable();
 

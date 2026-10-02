@@ -18,7 +18,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.7";
+        public const string pluginVersion = "1.5.8";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -172,7 +172,6 @@ namespace NomapPrinter
         {
             LocalizationManager.Localizer.Initialize();
 
-            harmony.PatchAll();
             instance = this;
             IsHeadless = SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
 
