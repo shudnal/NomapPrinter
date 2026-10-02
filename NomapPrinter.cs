@@ -170,6 +170,9 @@ namespace NomapPrinter
 
         void Awake()
         {
+            LocalizationManager.Localizer.Initialize();
+
+            harmony.PatchAll();
             instance = this;
             IsHeadless = SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
 
@@ -185,6 +188,7 @@ namespace NomapPrinter
 
             ConfigInit();
             _ = configSync.AddLockingConfigEntry(configLocked);
+            LocalizationManager.Localizer.ApplyCurrentLocalization();
 
             Game.isModded = true;
 
@@ -378,9 +382,6 @@ namespace NomapPrinter
             configDirectory = Path.Combine(Paths.ConfigPath, pluginID);
 
             InitTerminalCommands();
-
-            if (!IsHeadless)
-                StartCoroutine(LocalizationManager.Localizer.Load());
         }
 
         public void InitTerminalCommands()
