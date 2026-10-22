@@ -34,6 +34,17 @@ Map content will be automatically updated on file change.
 * only show your own pins (no shared pins)
 * pins that checked (red crossed) are not shown
 * Bed and death pins are not shown
+* player position, shout, and ping pins are not printed
+
+## Dynamic player pins
+
+`Pins list -> Show dynamic player pins` controls player position, shout, and ping pins on generated maps. It is disabled by default.
+
+`Show all pins` does not override this setting. Enable `Show dynamic player pins` to print these pins without enabling `Show all pins`. `Show map pins` must also be enabled. The mod's exploration, ownership, and checked-state filters still apply unless `Show all pins` is enabled.
+
+This setting does not change the interactive map or Compass. Printed pin visibility uses Nomap Printer settings, not the interactive map's icon visibility buttons. The existing `Apply pin visibility settings to interactive map` option keeps its previous behavior.
+
+Generate a new map at the Cartography Table after changing this setting. Printed pins show their positions at map generation and do not move on the static image. Existing PNG files and images loaded from a shared file are not modified.
 
 ## Persistent event pins
 
@@ -41,7 +52,7 @@ Map content will be automatically updated on file change.
 
 `Pins -> Show persistent event pins always` allows those pins in unexplored areas, independently of the merchant/Hildir setting. Enabled by default. Disable it to respect `Show only explored pins` without hiding events on explored terrain.
 
-These settings affect generated maps and the interactive map when `Apply pin visibility settings to interactive map` is enabled. `Show map pins` remains the master switch; `Show all pins` overrides category, exploration, ownership, and checked-state filters as before. Showing an event does not reveal the terrain underneath it.
+These settings affect generated maps and the interactive map when `Apply pin visibility settings to interactive map` is enabled. `Show map pins` remains the master switch. For persistent event pins, `Show all pins` overrides the category, exploration, ownership, and checked-state filters. Showing an event does not reveal the terrain underneath it.
 
 Only pins belonging to active persistent events are affected. Ordinary raids and Epic Loot markers retain their existing rules. Event areas use their world radius on generated maps. Generated maps remain snapshots and must be regenerated at the Cartography Table to reflect newly started or completed events; interactive map pins follow the game's live event list. Images loaded from a shared file are not modified.
 

@@ -1469,7 +1469,7 @@ namespace NomapPrinter
 
             foreach (Minimap.PinData pin in Minimap.instance.m_pins)
             {
-                if (!ShouldShowPin(pin))
+                if (!ShouldShowPin(pin, forPrinting: true))
                     continue;
 
                 if (!pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
@@ -1508,12 +1508,19 @@ namespace NomapPrinter
             return false;
         }
 
-        internal static bool ShouldShowPin(Minimap.PinData pin)
+        internal static bool ShouldShowPin(Minimap.PinData pin, bool forPrinting = false)
         {
             if (!showPins.Value || Minimap.instance == null)
                 return false;
 
             if (pin?.m_icon == null)
+                return false;
+
+            // Keep the interactive filter unchanged. Printed dynamic pins have their own switch.
+            bool printedDynamicPlayerPin = forPrinting && (pin.m_type == Minimap.PinType.Player
+                || pin.m_type == Minimap.PinType.Shout
+                || pin.m_type == Minimap.PinType.Ping);
+            if (printedDynamicPlayerPin && !showDynamicPlayerPins.Value)
                 return false;
 
             bool persistentEventPin = IsPersistentEventPin(pin);
@@ -1543,7 +1550,7 @@ namespace NomapPrinter
                 }
             }
 
-            if (!persistentEventPin && !IsIconConfiguredShowable(pin.m_icon.name))
+            if (!printedDynamicPlayerPin && !persistentEventPin && !IsIconConfiguredShowable(pin.m_icon.name))
                 return false;
 
             if (pin.m_type == Minimap.PinType.Death && showLastDeathPin.Value && !showPinDeath.Value)

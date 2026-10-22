@@ -18,7 +18,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.8";
+        public const string pluginVersion = "1.5.9";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -98,6 +98,7 @@ namespace NomapPrinter
         public static ConfigEntry<int> pinTextOffset;
 
         public static ConfigEntry<bool> showEveryPin;
+        public static ConfigEntry<bool> showDynamicPlayerPins;
         public static ConfigEntry<bool> showPinStart;
         public static ConfigEntry<bool> showPinTrader;
         public static ConfigEntry<bool> showPinHildir;
@@ -350,7 +351,8 @@ namespace NomapPrinter
             if (!IsHeadless)
                 pinTextFont.SettingChanged += (s,e) => MapPinTexts.ClearPinFont();
 
-            showEveryPin = config("Pins list", "Show all pins", false, "Show all pins");
+            showEveryPin = config("Pins list", "Show all pins", false, "Show all pin types. On printed maps, player position, shout, and ping pins still require Show dynamic player pins.");
+            showDynamicPlayerPins = config("Pins list", "Show dynamic player pins", false, "Print player position, shout, and ping pins. This setting controls these pins regardless of Show all pins. Other pin filters still apply. Does not affect the interactive map. Generate the map again at a Cartography Table to apply changes.");
             showPinStart = config("Pins list", "Show Start pins", true, "Show Start pin on drawed map");
             showPinTrader = config("Pins list", "Show Haldor pins", true, "Show Haldor pin on drawed map");
             showPinHildir = config("Pins list", "Show Hildir pins", true, "Show Hildir pin on drawed map");

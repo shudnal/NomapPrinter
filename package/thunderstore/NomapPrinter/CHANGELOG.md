@@ -1,3 +1,6 @@
+# 1.5.9
+* Added "Show dynamic player pins" to control player position, shout, and ping pins on printed maps. Disabled by default, even with "Show all pins" enabled. Interactive map behavior is unchanged.
+
 # 1.5.8
 * headless skip localization initialization and localization patches
 
