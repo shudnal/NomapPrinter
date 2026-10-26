@@ -1,3 +1,7 @@
+# Unreleased
+* Improved the colors and circle edges of Epic Loot markers on printed maps.
+* Long pin labels wrap onto centered lines below the icon.
+
 # 1.5.11
 * Fixed missing Epic Loot 0.15 bounty icons and search areas on printed maps and on interactive maps filtered by Nomap Printer.
 

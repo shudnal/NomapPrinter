@@ -1355,8 +1355,10 @@ namespace NomapPrinter
                 Color32[] iconPixels = doubleSizeIcon ? pinIconsDouble[pin.m_icon] : pinIcons[pin.m_icon];
                 int sourceSize = doubleSizeIcon ? iconSize * 2 : iconSize;
                 int size = sourceSize;
+                bool epicLootPin = epicLootPins?.Contains(pin) == true;
+                bool epicLootArea = epicLootPin && pin.m_type == Minimap.PinType.EventArea;
                 if (pin.m_type == Minimap.PinType.EventArea && pin.m_worldSize > 0f
-                    && (IsPersistentEventPin(pin) || epicLootPins?.Contains(pin) == true))
+                    && (IsPersistentEventPin(pin) || epicLootArea))
                 {
                     float worldMapSize = Minimap.instance.m_textureSize * Minimap.instance.m_pixelSize;
                     size = Math.Max(1, Mathf.RoundToInt(pin.m_worldSize / worldMapSize * mapSize));
@@ -1370,12 +1372,16 @@ namespace NomapPrinter
                     // Keep the icon centered and clip larger event areas at the image edges.
                     int iconmx = posX - (size / 2);
                     int iconmy = posY - (size / 2);
-                    int firstRow = Math.Max(0, -iconmy);
-                    int lastRow = Math.Min(size, mapSize - iconmy);
-                    int firstCol = Math.Max(0, -iconmx);
-                    int lastCol = Math.Min(size, mapSize - iconmx);
+                    // Leave one printed pixel around adventure circles so their rim
+                    // is not cut against the sampling rectangle. Do not change game data.
+                    int inset = epicLootArea && size > 2 ? 1 : 0;
+                    int drawSize = size - inset * 2;
+                    int firstRow = Math.Max(inset, -iconmy);
+                    int lastRow = Math.Min(size - inset, mapSize - iconmy);
+                    int firstCol = Math.Max(inset, -iconmx);
+                    int lastCol = Math.Min(size - inset, mapSize - iconmx);
 
-                    // Scale event area pixels to their world diameter; regular pins keep their size.
+                    // Sample adventure areas at pixel centers, including both edges.
                     bool resizeIcon = size != sourceSize;
                     for (int row = firstRow; row < lastRow; row++)
                     {
@@ -1385,7 +1391,10 @@ namespace NomapPrinter
                             int pos = (iconmy + row) * mapSize + iconmx + col;
                             int sourceCol = resizeIcon ? (int)((long)col * sourceSize / size) : col;
 
-                            Color32 iconPix = iconPixels[sourceRow * sourceSize + sourceCol];
+                            Color32 iconPix = epicLootArea
+                                ? SamplePinIcon(iconPixels, sourceSize,
+                                    (col - inset + 0.5f) / drawSize, (row - inset + 0.5f) / drawSize)
+                                : iconPixels[sourceRow * sourceSize + sourceCol];
                             if (iconPix.a != 0 && pinsHildirQuestColored.Value)
                             {
                                 byte alpha = iconPix.a;
@@ -1400,9 +1409,10 @@ namespace NomapPrinter
                                 iconPix.a = alpha;
                             }
 
-                            if (mapType.Value == MapType.Chart || mapType.Value == MapType.OldChart)
+                            if (!epicLootPin && (mapType.Value == MapType.Chart || mapType.Value == MapType.OldChart))
                             {
-                                // add yellow tint of chart maps, one iteration is enough for OldChart
+                                // Keep Epic Loot trophies and areas in their original colors and alpha.
+                                // Other pins retain the chart's parchment tint.
                                 iconPix = Color32.Lerp(iconPix, MapGenerator.yellowMap, 0.33f * iconPix.a / 255f);
                             }
 
@@ -1423,7 +1433,8 @@ namespace NomapPrinter
                         checkedOverlay?.Draw(map, mapSize, posX, posY, size);
                     }
 
-                    pinTexts.Add(Tuple.Create(posX, posY - (doubleSizeIcon ? (int)(size * 0.70f) : size) - pinTextOffset.Value, GetPinName(pin)));
+                    // Text grows down from this top edge, including wrapped labels.
+                    pinTexts.Add(Tuple.Create(posX, posY - size / 2 - pinTextOffset.Value, GetPinName(pin)));
                 }
 
                 yield return null;
@@ -1431,6 +1442,19 @@ namespace NomapPrinter
 
             if (pinTextEnabled.Value)
                 yield return MapPinTexts.DrawPinTexts(map, mapSize, pinTexts);
+        }
+
+        private static Color32 SamplePinIcon(Color32[] pixels, int size, float u, float v)
+        {
+            float x = Mathf.Clamp(u * size - 0.5f, 0f, size - 1);
+            float y = Mathf.Clamp(v * size - 0.5f, 0f, size - 1);
+            int x0 = Mathf.FloorToInt(x);
+            int y0 = Mathf.FloorToInt(y);
+            int x1 = Math.Min(x0 + 1, size - 1);
+            int y1 = Math.Min(y0 + 1, size - 1);
+            Color32 lower = Color32.Lerp(pixels[y0 * size + x0], pixels[y0 * size + x1], x - x0);
+            Color32 upper = Color32.Lerp(pixels[y1 * size + x0], pixels[y1 * size + x1], x - x0);
+            return Color32.Lerp(lower, upper, y - y0);
         }
 
         private static string GetPinName(Minimap.PinData pin)
@@ -1648,12 +1672,14 @@ namespace NomapPrinter
         private static Color32[] BlitAndRead(Texture source, int size)
         {
             RenderTexture previous = RenderTexture.active;
+            bool previousSRGBWrite = GL.sRGBWrite;
             RenderTexture target = null;
             Texture2D readable = null;
             try
             {
-                target = RenderTexture.GetTemporary(size, size, 0);
+                target = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
                 target.filterMode = FilterMode.Bilinear;
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 Graphics.Blit(source, target);
                 RenderTexture.active = target;
 
@@ -1664,6 +1690,7 @@ namespace NomapPrinter
             finally
             {
                 RenderTexture.active = previous;
+                GL.sRGBWrite = previousSRGBWrite;
                 if (target != null)
                     RenderTexture.ReleaseTemporary(target);
                 if (readable != null)
@@ -1710,15 +1737,20 @@ namespace NomapPrinter
                 return null;
 
             RenderTexture previous = RenderTexture.active;
+            bool previousSRGBWrite = GL.sRGBWrite;
             RenderTexture target = null;
             Texture2D result = null;
             try
             {
-                target = RenderTexture.GetTemporary(regionWidth, regionHeight, 0);
+                target = RenderTexture.GetTemporary(regionWidth, regionHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 Graphics.Blit(source, target, scale, new Vector2(uv.x, uv.y));
                 RenderTexture.active = target;
 
-                result = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                result = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp
+                };
                 // Preserve transparent borders around trimmed atlas sprites.
                 result.SetPixels32(new Color32[width * height]);
                 result.ReadPixels(new Rect(0, 0, regionWidth, regionHeight),
@@ -1735,6 +1767,7 @@ namespace NomapPrinter
             finally
             {
                 RenderTexture.active = previous;
+                GL.sRGBWrite = previousSRGBWrite;
                 if (target != null)
                     RenderTexture.ReleaseTemporary(target);
             }
