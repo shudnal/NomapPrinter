@@ -1,4 +1,4 @@
-# Unreleased
+# 1.5.10
 * Checked pins now appear crossed out on printed maps when they are not hidden by the pin filters.
 
 # 1.5.9
