@@ -1,5 +1,5 @@
 # Unreleased
-* Improved the colors and circle edges of Epic Loot markers on printed maps.
+* Epic Loot bounty search circles now extend beyond their nominal printed bounds.
 * Long pin labels wrap onto centered lines below the icon.
 
 # 1.5.11

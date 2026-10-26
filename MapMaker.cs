@@ -1369,31 +1369,29 @@ namespace NomapPrinter
                     int posX = (int)(mx * mapSize);
                     int posY = (int)(my * mapSize);
 
-                    // Keep the icon centered and clip larger event areas at the image edges.
-                    int iconmx = posX - (size / 2);
-                    int iconmy = posY - (size / 2);
-                    // Leave one printed pixel around adventure circles so their rim
-                    // is not cut against the sampling rectangle. Do not change game data.
-                    int inset = epicLootArea && size > 2 ? 1 : 0;
-                    int drawSize = size - inset * 2;
-                    int firstRow = Math.Max(inset, -iconmy);
-                    int lastRow = Math.Min(size - inset, mapSize - iconmy);
-                    int firstCol = Math.Max(inset, -iconmx);
-                    int lastCol = Math.Min(size - inset, mapSize - iconmx);
+                    // Draw adventure circles one pixel past the nominal bounds on every side.
+                    // Only the map edge clips the result; other pins keep their original size.
+                    int overflow = epicLootArea ? 1 : 0;
+                    int renderSize = size + overflow * 2;
+                    int iconmx = posX - size / 2 - overflow;
+                    int iconmy = posY - size / 2 - overflow;
+                    int firstRow = Math.Max(0, -iconmy);
+                    int lastRow = Math.Min(renderSize, mapSize - iconmy);
+                    int firstCol = Math.Max(0, -iconmx);
+                    int lastCol = Math.Min(renderSize, mapSize - iconmx);
 
-                    // Sample adventure areas at pixel centers, including both edges.
-                    bool resizeIcon = size != sourceSize;
+                    bool resizeIcon = renderSize != sourceSize;
                     for (int row = firstRow; row < lastRow; row++)
                     {
-                        int sourceRow = resizeIcon ? (int)((long)row * sourceSize / size) : row;
+                        int sourceRow = resizeIcon ? (int)((long)row * sourceSize / renderSize) : row;
                         for (int col = firstCol; col < lastCol; col++)
                         {
                             int pos = (iconmy + row) * mapSize + iconmx + col;
-                            int sourceCol = resizeIcon ? (int)((long)col * sourceSize / size) : col;
+                            int sourceCol = resizeIcon ? (int)((long)col * sourceSize / renderSize) : col;
 
                             Color32 iconPix = epicLootArea
                                 ? SamplePinIcon(iconPixels, sourceSize,
-                                    (col - inset + 0.5f) / drawSize, (row - inset + 0.5f) / drawSize)
+                                    (col + 0.5f) / renderSize, (row + 0.5f) / renderSize)
                                 : iconPixels[sourceRow * sourceSize + sourceCol];
                             if (iconPix.a != 0 && pinsHildirQuestColored.Value)
                             {
@@ -1409,10 +1407,9 @@ namespace NomapPrinter
                                 iconPix.a = alpha;
                             }
 
-                            if (!epicLootPin && (mapType.Value == MapType.Chart || mapType.Value == MapType.OldChart))
+                            if (mapType.Value == MapType.Chart || mapType.Value == MapType.OldChart)
                             {
-                                // Keep Epic Loot trophies and areas in their original colors and alpha.
-                                // Other pins retain the chart's parchment tint.
+                                // add yellow tint of chart maps, one iteration is enough for OldChart
                                 iconPix = Color32.Lerp(iconPix, MapGenerator.yellowMap, 0.33f * iconPix.a / 255f);
                             }
 
