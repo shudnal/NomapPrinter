@@ -36,6 +36,14 @@ Map content will be automatically updated on file change.
 * Bed and death pins are not shown
 * player position, shout, and ping pins are not printed
 
+## Checked pins
+
+Checked pins keep their cross marks on printed maps when the pin filters allow them to be shown. To include them, turn off `Pins -> Show only unchecked pins`. This setting is enabled by default. `Pins list -> Show all pins` still bypasses the checked-state filter.
+
+Cross marks use the game's checked-pin image and scale with the printed icon. This does not change the interactive map or its filters. No additional setting is required.
+
+Generate a new map at the Cartography Table after checking or unchecking pins. Existing printed maps and images loaded from a shared file are not changed automatically.
+
 ## Dynamic player pins
 
 `Pins list -> Show dynamic player pins` controls player position, shout, and ping pins on generated maps. It is disabled by default.
