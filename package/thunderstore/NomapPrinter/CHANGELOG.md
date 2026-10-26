@@ -1,4 +1,4 @@
-# Unreleased
+# 1.5.11
 * Fixed missing Epic Loot 0.15 bounty icons and search areas on printed maps and on interactive maps filtered by Nomap Printer.
 
 # 1.5.10
