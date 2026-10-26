@@ -227,9 +227,13 @@ namespace NomapPrinter
                 if (!IsOpen || __instance.m_pins == null)
                     return;
 
+                HashSet<Minimap.PinData> epicLootPins = applyPinFiltersToInteractiveMap.Value
+                    ? EpicLootPins.GetAdventurePins()
+                    : null;
                 foreach (Minimap.PinData pin in __instance.m_pins)
                 {
-                    bool shouldHide = applyPinFiltersToInteractiveMap.Value && !MapMaker.ShouldShowPin(pin);
+                    bool shouldHide = applyPinFiltersToInteractiveMap.Value
+                        && !MapMaker.ShouldShowPin(pin, epicLootPins: epicLootPins);
 
                     if (shouldHide)
                     {

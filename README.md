@@ -54,6 +54,14 @@ This setting does not change the interactive map or Compass. Printed pin visibil
 
 Generate a new map at the Cartography Table after changing this setting. Printed pins show their positions at map generation and do not move on the static image. Existing PNG files and images loaded from a shared file are not modified.
 
+## Epic Loot pins
+
+`Pins list -> Show Epic Loot pins` controls bounty and treasure-map markers, including bounty trophy icons and gold-rimmed search areas from Epic Loot 0.15. Search areas use their world size on printed maps. `Show all pins` still overrides this category setting.
+
+The existing exploration filters also apply: `Show merchants pins always` allows these markers in unexplored areas. The same rules apply to the interactive map only when `Apply pin visibility settings to interactive map` is enabled.
+
+Generate a new map at the Cartography Table to update an existing print. Only pins currently provided by Epic Loot can be printed; Nomap Printer does not change Epic Loot's own pin visibility controls. Reward rows under bounty names remain part of Epic Loot's interactive map UI and are not printed.
+
 ## Persistent event pins
 
 `Pins list -> Show persistent event pins` enables markers and areas for active persistent events, including Jotun invasions. Enabled by default.
