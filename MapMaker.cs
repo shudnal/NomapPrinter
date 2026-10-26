@@ -1336,6 +1336,8 @@ namespace NomapPrinter
         private static IEnumerator AddPinsOnMap(Color32[] map, int mapSize)
         {
             List<Tuple<int, int, string>> pinTexts = new List<Tuple<int, int, string>>();
+            MapPinChecks checkedOverlay = null;
+            bool checkedOverlayInitialized = false;
 
             foreach (Minimap.PinData pin in GetPinsToPrint())
             {
@@ -1404,6 +1406,18 @@ namespace NomapPrinter
                             map[pos] = Color32.Lerp(map[pos], iconPix, iconPix.a / 255f); // alpha is relative for more immersive effect
                             map[pos].a = byte.MaxValue;  // make opaque again
                         }
+                    }
+
+                    if (pin.m_checked)
+                    {
+                        if (!checkedOverlayInitialized)
+                        {
+                            checkedOverlayInitialized = true;
+                            checkedOverlay = MapPinChecks.Create();
+                        }
+
+                        // Draw on this map only; cached base icons also serve unchecked pins.
+                        checkedOverlay?.Draw(map, mapSize, posX, posY, size);
                     }
 
                     pinTexts.Add(Tuple.Create(posX, posY - (doubleSizeIcon ? (int)(size * 0.70f) : size) - pinTextOffset.Value, GetPinName(pin)));

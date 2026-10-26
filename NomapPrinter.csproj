@@ -122,6 +122,7 @@
     <Compile Include="MapFileWriter.cs" />
     <Compile Include="MapGenerator.cs" />
     <Compile Include="MapMaker.cs" />
+    <Compile Include="MapPinChecks.cs" />
     <Compile Include="MapPinTexts.cs" />
     <Compile Include="MapViewer.cs" />
     <Compile Include="NomapPrinter.cs" />

@@ -1,3 +1,6 @@
+# Unreleased
+* Checked pins now appear crossed out on printed maps when they are not hidden by the pin filters.
+
 # 1.5.9
 * Added "Show dynamic player pins" to control player position, shout, and ping pins on printed maps. Disabled by default, even with "Show all pins" enabled. Interactive map behavior is unchanged.
 
