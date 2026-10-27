@@ -1,9 +1,6 @@
-# Unreleased
-* Epic Loot bounty search circles now extend beyond their nominal printed bounds.
-* Long pin labels wrap onto centered lines below the icon.
-
 # 1.5.11
-* Fixed missing Epic Loot 0.15 bounty icons and search areas on printed maps and on interactive maps filtered by Nomap Printer.
+* Fixed Epic Loot 0.15 bounty markers on printed and filtered interactive maps, including missing trophy icons and incomplete search circles.
+* Long pin names now wrap onto centered lines on printed maps.
 
 # 1.5.10
 * Checked pins now appear crossed out on printed maps when they are not hidden by the pin filters.
