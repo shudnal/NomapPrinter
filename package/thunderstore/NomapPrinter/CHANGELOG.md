@@ -1,3 +1,7 @@
+# 1.5.11
+* Fixed Epic Loot 0.15 bounty markers on printed and filtered interactive maps, including missing trophy icons and incomplete search circles.
+* Long pin names now wrap onto centered lines on printed maps.
+
 # 1.5.10
 * Checked pins now appear crossed out on printed maps when they are not hidden by the pin filters.
 

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Sprites;
 using static NomapPrinter.NomapPrinter;
 using Object = UnityEngine.Object;
 
@@ -466,10 +467,10 @@ namespace NomapPrinter
             return mapTexture;
         }
 
-        private static readonly Dictionary<string, Color32[]> pinIcons = new Dictionary<string, Color32[]>();
-        private static readonly Dictionary<string, Color32[]> pinIconsDouble = new Dictionary<string, Color32[]>();
-
-        private static Texture2D iconSpriteTexture;   // Current sprite texture is not readable. Saving a cached copy the first time the variable is accessed
+        // Runtime sprites can have the same name or no name at all.
+        private static readonly Dictionary<Sprite, Color32[]> pinIcons = new Dictionary<Sprite, Color32[]>();
+        private static readonly Dictionary<Sprite, Color32[]> pinIconsDouble = new Dictionary<Sprite, Color32[]>();
+        private static Minimap iconCacheMinimap;
         private static int iconSize = 32;
 
         private static long worldUID;
@@ -1339,7 +1340,8 @@ namespace NomapPrinter
             MapPinChecks checkedOverlay = null;
             bool checkedOverlayInitialized = false;
 
-            foreach (Minimap.PinData pin in GetPinsToPrint())
+            HashSet<Minimap.PinData> epicLootPins = EpicLootPins.GetAdventurePins();
+            foreach (Minimap.PinData pin in GetPinsToPrint(epicLootPins))
             {
                 // get position in relative float instead of vector
                 Minimap.instance.WorldToMapPoint(pin.m_pos, out float mx, out float my);
@@ -1350,10 +1352,13 @@ namespace NomapPrinter
 
                 bool doubleSizeIcon = showPinsDoubleSize.Value && pin.m_doubleSize && NomapPrinter.mapSize.Value == MapSize.Smooth;
 
-                Color32[] iconPixels = doubleSizeIcon ? pinIconsDouble[pin.m_icon.name] : pinIcons[pin.m_icon.name];
+                Color32[] iconPixels = doubleSizeIcon ? pinIconsDouble[pin.m_icon] : pinIcons[pin.m_icon];
                 int sourceSize = doubleSizeIcon ? iconSize * 2 : iconSize;
                 int size = sourceSize;
-                if (pin.m_type == Minimap.PinType.EventArea && IsPersistentEventPin(pin) && pin.m_worldSize > 0f)
+                bool epicLootPin = epicLootPins?.Contains(pin) == true;
+                bool epicLootArea = epicLootPin && pin.m_type == Minimap.PinType.EventArea;
+                if (pin.m_type == Minimap.PinType.EventArea && pin.m_worldSize > 0f
+                    && (IsPersistentEventPin(pin) || epicLootArea))
                 {
                     float worldMapSize = Minimap.instance.m_textureSize * Minimap.instance.m_pixelSize;
                     size = Math.Max(1, Mathf.RoundToInt(pin.m_worldSize / worldMapSize * mapSize));
@@ -1364,25 +1369,30 @@ namespace NomapPrinter
                     int posX = (int)(mx * mapSize);
                     int posY = (int)(my * mapSize);
 
-                    // Keep the icon centered and clip larger event areas at the image edges.
-                    int iconmx = posX - (size / 2);
-                    int iconmy = posY - (size / 2);
+                    // Draw adventure circles one pixel past the nominal bounds on every side.
+                    // Only the map edge clips the result; other pins keep their original size.
+                    int overflow = epicLootArea ? 1 : 0;
+                    int renderSize = size + overflow * 2;
+                    int iconmx = posX - size / 2 - overflow;
+                    int iconmy = posY - size / 2 - overflow;
                     int firstRow = Math.Max(0, -iconmy);
-                    int lastRow = Math.Min(size, mapSize - iconmy);
+                    int lastRow = Math.Min(renderSize, mapSize - iconmy);
                     int firstCol = Math.Max(0, -iconmx);
-                    int lastCol = Math.Min(size, mapSize - iconmx);
+                    int lastCol = Math.Min(renderSize, mapSize - iconmx);
 
-                    // Scale event area pixels to their world diameter; regular pins keep their size.
-                    bool resizeIcon = size != sourceSize;
+                    bool resizeIcon = renderSize != sourceSize;
                     for (int row = firstRow; row < lastRow; row++)
                     {
-                        int sourceRow = resizeIcon ? (int)((long)row * sourceSize / size) : row;
+                        int sourceRow = resizeIcon ? (int)((long)row * sourceSize / renderSize) : row;
                         for (int col = firstCol; col < lastCol; col++)
                         {
                             int pos = (iconmy + row) * mapSize + iconmx + col;
-                            int sourceCol = resizeIcon ? (int)((long)col * sourceSize / size) : col;
+                            int sourceCol = resizeIcon ? (int)((long)col * sourceSize / renderSize) : col;
 
-                            Color32 iconPix = iconPixels[sourceRow * sourceSize + sourceCol];
+                            Color32 iconPix = epicLootArea
+                                ? SamplePinIcon(iconPixels, sourceSize,
+                                    (col + 0.5f) / renderSize, (row + 0.5f) / renderSize)
+                                : iconPixels[sourceRow * sourceSize + sourceCol];
                             if (iconPix.a != 0 && pinsHildirQuestColored.Value)
                             {
                                 byte alpha = iconPix.a;
@@ -1420,7 +1430,8 @@ namespace NomapPrinter
                         checkedOverlay?.Draw(map, mapSize, posX, posY, size);
                     }
 
-                    pinTexts.Add(Tuple.Create(posX, posY - (doubleSizeIcon ? (int)(size * 0.70f) : size) - pinTextOffset.Value, GetPinName(pin)));
+                    // Text grows down from this top edge, including wrapped labels.
+                    pinTexts.Add(Tuple.Create(posX, posY - size / 2 - pinTextOffset.Value, GetPinName(pin)));
                 }
 
                 yield return null;
@@ -1428,6 +1439,19 @@ namespace NomapPrinter
 
             if (pinTextEnabled.Value)
                 yield return MapPinTexts.DrawPinTexts(map, mapSize, pinTexts);
+        }
+
+        private static Color32 SamplePinIcon(Color32[] pixels, int size, float u, float v)
+        {
+            float x = Mathf.Clamp(u * size - 0.5f, 0f, size - 1);
+            float y = Mathf.Clamp(v * size - 0.5f, 0f, size - 1);
+            int x0 = Mathf.FloorToInt(x);
+            int y0 = Mathf.FloorToInt(y);
+            int x1 = Math.Min(x0 + 1, size - 1);
+            int y1 = Math.Min(y0 + 1, size - 1);
+            Color32 lower = Color32.Lerp(pixels[y0 * size + x0], pixels[y0 * size + x1], x - x0);
+            Color32 upper = Color32.Lerp(pixels[y1 * size + x0], pixels[y1 * size + x1], x - x0);
+            return Color32.Lerp(lower, upper, y - y0);
         }
 
         private static string GetPinName(Minimap.PinData pin)
@@ -1474,7 +1498,7 @@ namespace NomapPrinter
             };
         }
 
-        private static List<Minimap.PinData> GetPinsToPrint()
+        private static List<Minimap.PinData> GetPinsToPrint(HashSet<Minimap.PinData> epicLootPins)
         {
             List<Minimap.PinData> pinsToPrint = new List<Minimap.PinData>();
 
@@ -1483,10 +1507,10 @@ namespace NomapPrinter
 
             foreach (Minimap.PinData pin in Minimap.instance.m_pins)
             {
-                if (!ShouldShowPin(pin, forPrinting: true))
+                if (!ShouldShowPin(pin, forPrinting: true, epicLootPins: epicLootPins))
                     continue;
 
-                if (!pinIcons.ContainsKey(pin.m_icon.name) && !AddPinIconToCache(pin.m_icon))
+                if (!pinIcons.ContainsKey(pin.m_icon) && !AddPinIconToCache(pin.m_icon))
                     continue;
 
                 pinsToPrint.Add(pin);
@@ -1522,7 +1546,7 @@ namespace NomapPrinter
             return false;
         }
 
-        internal static bool ShouldShowPin(Minimap.PinData pin, bool forPrinting = false)
+        internal static bool ShouldShowPin(Minimap.PinData pin, bool forPrinting = false, HashSet<Minimap.PinData> epicLootPins = null)
         {
             if (!showPins.Value || Minimap.instance == null)
                 return false;
@@ -1535,6 +1559,12 @@ namespace NomapPrinter
                 || pin.m_type == Minimap.PinType.Shout
                 || pin.m_type == Minimap.PinType.Ping);
             if (printedDynamicPlayerPin && !showDynamicPlayerPins.Value)
+                return false;
+
+            // Epic Loot 0.15 uses target trophies and runtime area sprites. Identify
+            // its actual pin/area pairs rather than admitting arbitrary trophy icons.
+            bool epicLootPin = epicLootPins?.Contains(pin) == true;
+            if (epicLootPin && !showEveryPin.Value && !showPinEpicLoot.Value)
                 return false;
 
             bool persistentEventPin = IsPersistentEventPin(pin);
@@ -1554,7 +1584,7 @@ namespace NomapPrinter
                 {
                     bool showInUnexploredArea = persistentEventPin
                         ? showPersistentEventPins.Value
-                        : showMerchantPins.Value && IsMerchantPin(pin.m_icon.name);
+                        : showMerchantPins.Value && (epicLootPin || IsMerchantPin(pin.m_icon.name));
                     if (!showInUnexploredArea)
                     {
                         Minimap.instance.WorldToPixel(pin.m_pos, out int px, out int py);
@@ -1564,7 +1594,7 @@ namespace NomapPrinter
                 }
             }
 
-            if (!printedDynamicPlayerPin && !persistentEventPin && !IsIconConfiguredShowable(pin.m_icon.name))
+            if (!printedDynamicPlayerPin && !persistentEventPin && !epicLootPin && !IsIconConfiguredShowable(pin.m_icon.name))
                 return false;
 
             if (pin.m_type == Minimap.PinType.Death && showLastDeathPin.Value && !showPinDeath.Value)
@@ -1630,34 +1660,39 @@ namespace NomapPrinter
             if (pixels == null || pixels.Length <= 1)
                 return false;
 
-            pinIcons[icon.name] = pixels;
-            pinIconsDouble[icon.name] = pixelsdouble;
+            pinIcons[icon] = pixels;
+            pinIconsDouble[icon] = pixelsdouble;
 
             return true;
         }
 
         private static Color32[] BlitAndRead(Texture source, int size)
         {
-            RenderTexture prev = RenderTexture.active;
+            RenderTexture previous = RenderTexture.active;
+            bool previousSRGBWrite = GL.sRGBWrite;
+            RenderTexture target = null;
+            Texture2D readable = null;
+            try
+            {
+                target = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                target.filterMode = FilterMode.Bilinear;
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                Graphics.Blit(source, target);
+                RenderTexture.active = target;
 
-            RenderTexture rt = RenderTexture.GetTemporary(size, size, 0);
-            rt.filterMode = FilterMode.Bilinear;
-
-            Graphics.Blit(source, rt);
-
-            RenderTexture.active = rt;
-
-            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.ReadPixels(new Rect(0, 0, size, size), 0, 0);
-            tex.Apply();
-
-            Color32[] pixels = tex.GetPixels32();
-
-            Object.Destroy(tex);
-            RenderTexture.active = prev;
-            RenderTexture.ReleaseTemporary(rt);
-
-            return pixels;
+                readable = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                readable.ReadPixels(new Rect(0, 0, size, size), 0, 0, false);
+                return readable.GetPixels32();
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                GL.sRGBWrite = previousSRGBWrite;
+                if (target != null)
+                    RenderTexture.ReleaseTemporary(target);
+                if (readable != null)
+                    Object.Destroy(readable);
+            }
         }
 
         private static void GetIconPixels(Sprite icon, int baseSize, out Color32[] pixels1x, out Color32[] pixels2x)
@@ -1665,85 +1700,74 @@ namespace NomapPrinter
             pixels1x = null;
             pixels2x = null;
 
-            Texture2D texture2D = GetTextureFromSprite(icon);
-            if (texture2D == null)
+            Texture2D texture = GetTextureFromSprite(icon);
+            if (texture == null)
                 return;
 
-            pixels2x = BlitAndRead(texture2D, baseSize * 2);
-            pixels1x = BlitAndRead(texture2D, baseSize);
+            try
+            {
+                pixels2x = BlitAndRead(texture, baseSize * 2);
+                pixels1x = BlitAndRead(texture, baseSize);
+            }
+            finally
+            {
+                Object.Destroy(texture);
+            }
         }
 
         private static Texture2D GetTextureFromSprite(Sprite sprite)
         {
-            if (sprite.texture == null)
+            Texture2D source = sprite.texture;
+            if (source == null || source.width == 0 || source.height == 0)
                 return null;
 
-            if (sprite.texture.width == 0 || sprite.texture.height == 0)
+            // Read only this sprite's region from its own texture. Bounty trophies
+            // do not share the minimap atlas, and gold areas are standalone textures.
+            Vector4 uv = DataUtility.GetOuterUV(sprite);
+            Vector4 padding = DataUtility.GetPadding(sprite);
+            Vector2 scale = new Vector2(uv.z - uv.x, uv.w - uv.y);
+            int width = Mathf.RoundToInt(sprite.rect.width);
+            int height = Mathf.RoundToInt(sprite.rect.height);
+            int regionWidth = Mathf.RoundToInt(Mathf.Abs(scale.x) * source.width);
+            int regionHeight = Mathf.RoundToInt(Mathf.Abs(scale.y) * source.height);
+            if (width <= 0 || height <= 0 || regionWidth <= 0 || regionHeight <= 0)
                 return null;
 
-            if (sprite.rect.width != sprite.texture.width)
-            {
-                int texWid = (int)sprite.rect.width;
-                int texHei = (int)sprite.rect.height;
-                Texture2D newTex = new Texture2D(texWid, texHei);
-                Color[] defaultPixels = Enumerable.Repeat(Color.clear, texWid * texHei).ToArray();
-                Color[] pixels = GetIconSpriteTexture(sprite.texture).GetPixels((int)sprite.textureRect.x
-                                                                              , (int)sprite.textureRect.y
-                                                                              , (int)sprite.textureRect.width
-                                                                              , (int)sprite.textureRect.height);
-
-                newTex.SetPixels(defaultPixels);
-                newTex.SetPixels((int)sprite.textureRectOffset.x, (int)sprite.textureRectOffset.y, (int)sprite.textureRect.width, (int)sprite.textureRect.height, pixels);
-                newTex.Apply();
-                return newTex;
-            }
-
-            return GetReadableTexture(sprite.texture);
-        }
-
-        private static Texture2D GetIconSpriteTexture(Texture2D texture2D)
-        {
-            if (iconSpriteTexture == null)
-                iconSpriteTexture = GetReadableTexture(texture2D);
-
-            return iconSpriteTexture;
-        }
-
-        private static Texture2D GetReadableTexture(Texture2D texture)
-        {
-            RenderTexture tmp = RenderTexture.GetTemporary(
-                                                texture.width,
-                                                texture.height,
-                                                24);
-
-            // Blit the pixels on texture to the RenderTexture
-            Graphics.Blit(texture, tmp);
-
-            // Backup the currently set RenderTexture
             RenderTexture previous = RenderTexture.active;
+            bool previousSRGBWrite = GL.sRGBWrite;
+            RenderTexture target = null;
+            Texture2D result = null;
+            try
+            {
+                target = RenderTexture.GetTemporary(regionWidth, regionHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                Graphics.Blit(source, target, scale, new Vector2(uv.x, uv.y));
+                RenderTexture.active = target;
 
-            // Set the current RenderTexture to the temporary one we created
-            RenderTexture.active = tmp;
-
-            // Create a new readable Texture2D to copy the pixels to it
-            Texture2D textureCopy = new Texture2D(texture.width, texture.height, TextureFormat.RGBA32, false, false);
-
-            // Copy the pixels from the RenderTexture to the new Texture
-            textureCopy.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
-            textureCopy.Apply();
-
-            // Reset the active RenderTexture
-            RenderTexture.active = previous;
-
-            // Release the temporary RenderTexture
-            RenderTexture.ReleaseTemporary(tmp);
-
-            // "textureCopy" now has the same pixels from "texture" and it's readable
-            Texture2D newTexture = new Texture2D(texture.width, texture.height);
-            newTexture.SetPixels(textureCopy.GetPixels());
-            newTexture.Apply();
-
-            return newTexture;
+                result = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp
+                };
+                // Preserve transparent borders around trimmed atlas sprites.
+                result.SetPixels32(new Color32[width * height]);
+                result.ReadPixels(new Rect(0, 0, regionWidth, regionHeight),
+                    Mathf.RoundToInt(padding.x), Mathf.RoundToInt(padding.y), false);
+                result.Apply(false);
+                return result;
+            }
+            catch
+            {
+                if (result != null)
+                    Object.Destroy(result);
+                throw;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                GL.sRGBWrite = previousSRGBWrite;
+                if (target != null)
+                    RenderTexture.ReleaseTemporary(target);
+            }
         }
 
         private static void InitIconSize()
@@ -1752,11 +1776,12 @@ namespace NomapPrinter
 
             newSize = Mathf.CeilToInt(newSize * pinScale.Value);
 
-            if (iconSize == newSize)
+            if (iconSize == newSize && iconCacheMinimap == Minimap.instance)
                 return;
 
             pinIcons.Clear();
             pinIconsDouble.Clear();
+            iconCacheMinimap = Minimap.instance;
             iconSize = newSize;
         }
     }

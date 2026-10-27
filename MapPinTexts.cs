@@ -14,6 +14,9 @@ namespace NomapPrinter
         private const int TextLayer = 31;
         private const string TextObjectName = "MapTMPText";
         private const string TextCamObjectName = "MapTMPTextCam";
+        // Use a width equivalent to a 150-unit map label at UI font size 16.
+        private const float LabelWidthPerFontSize = 150f / 16f;
+        private const int TextPadding = 2;
 
         private static TMP_FontAsset defaultFontAsset = null;
 
@@ -92,8 +95,12 @@ namespace NomapPrinter
 
                 TMP_Settings.defaultFontAsset = previousFont;
 
-                tmp.alignment = TextAlignmentOptions.Center;
-                tmp.textWrappingMode = TextWrappingModes.NoWrap;
+                tmp.alignment = TextAlignmentOptions.Top;
+                tmp.textWrappingMode = TextWrappingModes.Normal;
+                tmp.wordWrappingRatios = 0.4f;
+                tmp.overflowMode = TextOverflowModes.Overflow;
+                tmp.enableAutoSizing = false;
+                tmp.rectTransform.pivot = new Vector2(0.5f, 1f);
                 tmp.richText = false;
             }
 
@@ -163,18 +170,24 @@ namespace NomapPrinter
 
             tmp.font = defaultFontAsset;
             tmp.text = text;
+            // World-space TMP uses one tenth of the UI font scale.
+            tmp.isOrthographic = false;
             tmp.fontSize = pinTextSize.Value * 10;
             tmp.fontStyle = pinTextFontStyle.Value;
             tmp.color = pinTextFontColor.Value;
 
+            float wrapWidth = Mathf.Max(1f, pinTextSize.Value * LabelWidthPerFontSize);
+            Vector2 preferred = tmp.GetPreferredValues(text, wrapWidth, Mathf.Infinity);
+            tmp.rectTransform.sizeDelta = new Vector2(wrapWidth, Mathf.Max(1f, preferred.y));
             tmp.ForceMeshUpdate();
 
             Bounds b = tmp.textBounds;
-            width = Mathf.CeilToInt(b.size.x);
-            height = Mathf.CeilToInt(b.size.y);
-
-            if (width <= 0 || height <= 0)
+            if (b.size.x <= 0f || b.size.y <= 0f)
                 return null;
+
+            // Keep the complete wrapped block and a small border for the glyph edges.
+            width = Mathf.CeilToInt(b.size.x) + TextPadding * 2;
+            height = Mathf.CeilToInt(b.size.y) + TextPadding * 2;
 
             textGO.transform.position = new Vector3(
                 -b.center.x,
@@ -183,18 +196,25 @@ namespace NomapPrinter
 
             EnsureRenderTargets(width, height);
 
-            float textCenterY = (b.min.y + b.max.y) * 0.5f;
-            cam.transform.position = new Vector3(0, textCenterY, -10);
+            // The text has already been moved to the origin. Do not offset the
+            // camera by its old bounds center again, especially for multiple lines.
+            cam.transform.position = new Vector3(0, 0, -10);
             cam.orthographicSize = height / 2f;
+            cam.aspect = (float)width / height;
             cam.targetTexture = rt;
 
-            RenderTexture.active = rt;
-            cam.Render();
-
-            readTex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-            readTex.Apply();
-
-            RenderTexture.active = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = rt;
+                cam.Render();
+                readTex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                readTex.Apply();
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+            }
 
             Color32[] pixels = readTex.GetPixels32();
 
@@ -260,7 +280,7 @@ namespace NomapPrinter
                 return;
 
             int startX = centerX - w / 2;
-            int startY = topY;
+            int startY = topY - h;
 
             // shadow
             DrawTextLayer(map, mapSize, textPixels, w, h,

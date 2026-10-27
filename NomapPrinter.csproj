@@ -116,6 +116,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EpicLootPins.cs" />
     <Compile Include="InteractiveMap.cs" />
     <Compile Include="LocalizationManager.cs" />
     <Compile Include="MapFileSync.cs" />
