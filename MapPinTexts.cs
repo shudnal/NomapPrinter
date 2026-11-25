@@ -59,6 +59,7 @@ namespace NomapPrinter
                     if (font.name.Contains(pinTextFont.Value, StringComparison.OrdinalIgnoreCase))
                     {
                         defaultFontAsset = font;
+                        LogInfo($"Using pin text font '{defaultFontAsset.name}'.");
                         return;
                     }
 
@@ -67,16 +68,17 @@ namespace NomapPrinter
                 }
             }
 
-            if (defaultFontAsset == null)
+            defaultFontAsset = fontCandidate;
+
+            if (!pinTextFont.Value.IsNullOrWhiteSpace())
             {
-                defaultFontAsset = fontCandidate;
-                
-                if (!pinTextFont.Value.IsNullOrWhiteSpace())
-                    if (defaultFontAsset != null)
-                        LogInfo($"Unable to find font {pinTextFont.Value}, falling back to {defaultFontAsset.name}");
-                    else
-                        LogInfo($"Unable to find font {pinTextFont.Value} or fallback font");
+                if (defaultFontAsset != null)
+                    LogWarningAlways($"Unable to find font '{pinTextFont.Value}'. Using '{defaultFontAsset.name}' for pin labels.");
+                else
+                    LogWarningAlways($"Unable to find font '{pinTextFont.Value}'. No fallback font is available; pin labels will not be drawn.");
             }
+            else if (defaultFontAsset != null)
+                LogInfo($"Using pin text font '{defaultFontAsset.name}'.");
         }
 
         private static void EnsureRenderObjects()
@@ -146,7 +148,7 @@ namespace NomapPrinter
 
         private static string BuildCacheKey(string text)
         {
-            return $"{text}|{pinTextSize.Value}|{pinTextFontStyle.Value}|{pinTextFontColor.Value.r},{pinTextFontColor.Value.g},{pinTextFontColor.Value.b},{pinTextFontColor.Value.a}";
+            return $"{text}|{pinTextSize.Value}|{pinTextFontStyle.Value}";
         }
 
         private static Color32[] RenderText(string text, out int width, out int height)
@@ -174,7 +176,8 @@ namespace NomapPrinter
             tmp.isOrthographic = false;
             tmp.fontSize = pinTextSize.Value * 10;
             tmp.fontStyle = pinTextFontStyle.Value;
-            tmp.color = pinTextFontColor.Value;
+            // Cache an opaque white text mask. Apply color when composing the map.
+            tmp.color = Color.white;
 
             float wrapWidth = Mathf.Max(1f, pinTextSize.Value * LabelWidthPerFontSize);
             Vector2 preferred = tmp.GetPreferredValues(text, wrapWidth, Mathf.Infinity);
@@ -275,6 +278,10 @@ namespace NomapPrinter
             int centerX,
             int topY)
         {
+            Color32 color = pinTextFontColor.Value;
+            if (color.a == 0)
+                return;
+
             Color32[] textPixels = RenderText(text, out int w, out int h);
             if (textPixels == null)
                 return;
@@ -285,7 +292,7 @@ namespace NomapPrinter
             // shadow
             DrawTextLayer(map, mapSize, textPixels, w, h,
                 startX + 1, startY - 1,
-                new Color32(0, 0, 0, 120));
+                new Color32(0, 0, 0, (byte)(120 * color.a / 255)));
 
             // outline
             for (int ox = -1; ox <= 1; ox++)
@@ -296,13 +303,13 @@ namespace NomapPrinter
 
                     DrawTextLayer(map, mapSize, textPixels, w, h,
                         startX + ox, startY + oy,
-                        new Color32(0, 0, 0, 200));
+                        new Color32(0, 0, 0, (byte)(200 * color.a / 255)));
                 }
 
             // text
             DrawTextLayer(map, mapSize, textPixels, w, h,
                 startX, startY,
-                Color.white);
+                color);
         }
 
         internal static IEnumerator DrawPinTexts(Color32[] map, int mapSize, List<Tuple<int, int, string>> pinTexts)

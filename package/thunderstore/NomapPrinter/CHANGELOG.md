@@ -1,3 +1,7 @@
+# 1.5.12
+* Fixed custom pin text colors on printed maps.
+* The log now warns when a configured pin font is unavailable and names the fallback font if available.
+
 # 1.5.11
 * Fixed Epic Loot 0.15 bounty markers on printed and filtered interactive maps, including missing trophy icons and incomplete search circles.
 * Long pin names now wrap onto centered lines on printed maps.
@@ -214,6 +218,6 @@
 * option to restrict map opening only when near the table
 
 # 1.0.2
- * Initial release
+* Initial release
 
 </details>

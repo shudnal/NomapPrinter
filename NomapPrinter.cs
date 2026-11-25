@@ -18,7 +18,7 @@ namespace NomapPrinter
     {
         public const string pluginID = "shudnal.NomapPrinter";
         public const string pluginName = "Nomap Printer";
-        public const string pluginVersion = "1.5.11";
+        public const string pluginVersion = "1.5.12";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -343,9 +343,9 @@ namespace NomapPrinter
 
             pinTextEnabled = config("Pins - Text", "Enabled", true, "Enabled pin texts");
             pinTextSize = config("Pins - Text", "Font size", 20, "Font size");
-            pinTextFont = config("Pins - Text", "Font", "", "Font override. Default font is pin font.");
+            pinTextFont = config("Pins - Text", "Font", "", "Name or part of the name of a loaded TextMeshPro font asset for printed map labels. Leave empty to use the default map pin font. Generate the map again to apply changes.");
             pinTextFontStyle = config("Pins - Text", "Font style", TMPro.FontStyles.Bold, "Font style");
-            pinTextFontColor = config("Pins - Text", "Font color", Color.white, "Font color");
+            pinTextFontColor = config("Pins - Text", "Font color", Color.white, "Color of pin labels on printed maps. Generate the map again to apply changes.");
             pinTextOffset = config("Pins - Text", "Text offset", 1, "From icon bottom");
 
             if (!IsHeadless)
@@ -440,6 +440,8 @@ namespace NomapPrinter
             if (loggingEnabled.Value)
                 instance.Logger.LogWarning(data);
         }
+
+        internal static void LogWarningAlways(object data) => instance.Logger.LogWarning(data);
 
         public static void ShowMessage(string text, MessageHud.MessageType type = MessageHud.MessageType.Center)
         {
